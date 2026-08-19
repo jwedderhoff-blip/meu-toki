@@ -1,6 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Groq from 'groq-sdk'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 const SYSTEM = `Você é o Toki, um assistente pessoal em português brasileiro.
 Você recebe transcrições de voz do usuário e deve:
@@ -8,7 +8,7 @@ Você recebe transcrições de voz do usuário e deve:
 2. Extrair dados estruturados quando relevante
 3. Responder de forma natural, direta e amigável
 
-Responda SEMPRE em JSON com este formato:
+Responda SEMPRE em JSON válido com este formato exato:
 {
   "reply": "sua resposta em texto para o usuário",
   "intent": "reminder|event|alarm|question|list|delete|general",
@@ -24,14 +24,15 @@ Regras para intent:
 - "event": compromisso agendado ("reunião às 14h", "consulta na sexta")
 - "alarm": alarme recorrente ou urgente ("todo dia às 7h", "alarme para 6h30")
 - "list": usuário quer ver seus compromissos/lembretes
-- "delete": usuário quer apagar algo (inclua id em data se souber)
-- "question": pergunta sobre horários, datas, fusos, calendário
+- "delete": usuário quer apagar algo
+- "question": pergunta sobre horários, datas, calendário
 - "general": qualquer outra coisa
 
 Para datas relativas use a data atual: ${new Date().toLocaleDateString('pt-BR')}.
 O fuso horário do usuário é America/Sao_Paulo.
 Se não houver data/hora explícita, datetime deve ser null.
-O campo "data" pode ser null se intent for "general" ou "question".`
+O campo "data" pode ser null se intent for "general" ou "question".
+Responda APENAS o JSON, sem markdown, sem blocos de código.`
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -53,19 +54,19 @@ export default async function handler(req, res) {
       { role: 'user', content: transcript }
     ]
 
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    const response = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
       max_tokens: 512,
-      system: SYSTEM,
-      messages
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'system', content: SYSTEM }, ...messages]
     })
 
-    const text = response.content[0]?.text || '{}'
+    const text = response.choices[0]?.message?.content || '{}'
     let parsed
     try {
       parsed = JSON.parse(text)
     } catch {
-      // Claude devolveu texto fora do JSON
       parsed = { reply: text, intent: 'general', data: null }
     }
 

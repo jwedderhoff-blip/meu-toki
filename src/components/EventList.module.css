@@ -1,0 +1,88 @@
+.wrap {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.pastLabel {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 8px;
+  padding-left: 2px;
+}
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.card:not(.past):hover {
+  border-color: var(--bg3);
+}
+
+.past {
+  opacity: 0.5;
+}
+
+.icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dt {
+  font-size: 13px;
+  color: var(--accent2);
+  margin-top: 2px;
+}
+
+.notes {
+  font-size: 13px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+.del {
+  flex-shrink: 0;
+  background: none;
+  color: var(--text3);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.del:hover {
+  color: var(--danger);
+}

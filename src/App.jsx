@@ -96,6 +96,32 @@ export default function App() {
     try {
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
 
+      // Detecta consultas de email e responde direto da Gmail API
+      const emailQuery = /email|e-mail|inbox|caixa de entrada|mensagem.*recebi|recebi.*mensagem/i
+      if (emailQuery.test(transcript) && isGoogleConnected()) {
+        setTab('email')
+        setEmailLoading(true)
+        const result = await fetchRecentEmails(10)
+        setEmailLoading(false)
+        if (result === null) {
+          addMsg('assistant', 'Não consegui acessar o Gmail. Tente desconectar e reconectar o Google.')
+        } else if (result.length === 0) {
+          addMsg('assistant', 'Sua caixa de entrada está vazia.')
+        } else {
+          setEmails(result)
+          const unread = result.filter(e => e.isUnread).length
+          const lines = result.slice(0, 5).map(e => {
+            const from = e.from.replace(/<[^>]+>/, '').trim() || e.from
+            const date = e.date ? new Date(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : ''
+            return `${e.isUnread ? '🔵' : '📧'} **${e.subject}**\n   De: ${from}${date ? ` · ${date}` : ''}\n   ${e.snippet}`
+          }).join('\n\n')
+          const header = unread > 0 ? `Você tem **${unread} não lido${unread > 1 ? 's' : ''}** de ${result.length} emails recentes:` : `Seus ${result.length} emails mais recentes:`
+          addMsg('assistant', `${header}\n\n${lines}`)
+        }
+        setLoading(false)
+        return
+      }
+
       // Detecta consultas de agenda e responde direto do Google Calendar
       const agendaQuery = /agenda|compromisso|o que (tenho|tem)|tenho (hoje|amanhã)|minha semana|eventos (de|do|da)/i
       if (agendaQuery.test(transcript) && isGoogleConnected()) {
@@ -314,7 +340,16 @@ export default function App() {
           <div className={styles.scroll}>
             {emailLoading
               ? <p className={styles.empty}>Carregando emails…</p>
-              : <EmailList emails={emails} />
+              : emails.length > 0
+                ? <EmailList emails={emails} />
+                : (
+                  <div className={styles.empty}>
+                    Nenhum email recente.<br />
+                    <button onClick={loadEmails} style={{ marginTop: 16, color: 'var(--accent2)', background: 'none', fontSize: 14, textDecoration: 'underline' }}>
+                      Recarregar
+                    </button>
+                  </div>
+                )
             }
           </div>
         )}

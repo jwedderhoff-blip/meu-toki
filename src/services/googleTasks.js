@@ -1,15 +1,14 @@
 // Google Tasks API — listas de tarefas integradas ao Gmail e Google Calendar
 
-let _token = null  // compartilhado via setter do googleCalendar
-
-export function setTasksToken(token) { _token = token }
+import { getToken } from './googleCalendar'
 
 async function tasksFetch(url, options = {}) {
-  if (!_token) return null
+  const token = getToken()
+  if (!token) return null
   const res = await fetch(url, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${_token}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
       ...(options.headers || {})
     }

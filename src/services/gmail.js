@@ -1,11 +1,11 @@
-let _token = null
-export function setGmailToken(token) { _token = token }
+import { getToken } from './googleCalendar'
 
 async function gmailFetch(url, options = {}) {
-  if (!_token) return null
+  const token = getToken()
+  if (!token) return null
   const res = await fetch(url, {
     ...options,
-    headers: { 'Authorization': `Bearer ${_token}`, 'Content-Type': 'application/json', ...(options.headers || {}) }
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(options.headers || {}) }
   })
   if (res.status === 401) return null
   return res
@@ -13,7 +13,7 @@ async function gmailFetch(url, options = {}) {
 
 // Busca os N emails mais recentes
 export async function fetchRecentEmails(maxResults = 8) {
-  if (!_token) return null
+  if (!getToken()) return null
 
   const listRes = await gmailFetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&q=in:inbox`
@@ -46,7 +46,7 @@ export async function fetchRecentEmails(maxResults = 8) {
 
 // Busca o corpo completo de um email específico
 export async function fetchEmailBody(messageId) {
-  if (!_token) return null
+  if (!getToken()) return null
   const res = await gmailFetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`
   )
@@ -70,7 +70,7 @@ export async function fetchEmailBody(messageId) {
 
 // Envia um email via Gmail API
 export async function sendEmail({ to, subject, body }) {
-  if (!_token) return false
+  if (!getToken()) return false
 
   const email = [
     `To: ${to}`,
@@ -92,7 +92,7 @@ export async function sendEmail({ to, subject, body }) {
 
 // Marca email como lido
 export async function markAsRead(messageId) {
-  if (!_token) return
+  if (!getToken()) return
   await gmailFetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`,
     { method: 'POST', body: JSON.stringify({ removeLabelIds: ['UNREAD'] }) }

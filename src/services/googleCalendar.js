@@ -19,8 +19,6 @@ function saveToken(token) {
     token,
     expiry: Date.now() + 55 * 60 * 1000
   }))
-  import('./googleTasks.js').then(m => m.setTasksToken(token))
-  import('./gmail.js').then(m => m.setGmailToken(token))
 }
 
 function clearToken() {
@@ -73,8 +71,6 @@ export function initGoogleCalendar(onConnectChange) {
         const { token, expiry } = JSON.parse(saved)
         if (expiry && Date.now() < expiry) {
           _token = token
-          import('./googleTasks.js').then(m => m.setTasksToken(token))
-          import('./gmail.js').then(m => m.setGmailToken(token))
           onConnectChange(true)
         } else {
           localStorage.removeItem('gcal_token')
@@ -101,6 +97,10 @@ export function disconnectGoogle() {
 
 export function isGoogleConnected() {
   return !!_token
+}
+
+export function getToken() {
+  return _token
 }
 
 async function gcalFetch(url, options = {}) {

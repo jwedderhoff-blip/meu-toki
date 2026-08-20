@@ -12,6 +12,7 @@ import { loadNotes, addNote, deleteNote } from './services/notes'
 import { openAndroidAlarm, openAndroidTimer, extractTime, isAndroid, formatDuration } from './services/android'
 import { addGoogleTask, addGoogleTaskList } from './services/googleTasks'
 import { fetchRecentEmails, sendEmail } from './services/gmail'
+import { loadWatches, addWatch, removeWatch, getLastEmailId, setLastEmailId, matchWatches } from './services/emailWatch'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
@@ -43,6 +44,7 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('toki_user')) } catch { return null }
   })
   const [menuOpen, setMenuOpen] = useState(false)
+  const [watches, setWatches] = useState(() => loadWatches())
   const menuRef = useRef(null)
 
   const syncFromGoogle = useCallback(async () => {
@@ -77,6 +79,47 @@ export default function App() {
     requestPermission()
     if (HAS_GCAL) initGoogleCalendar(handleConnectChange)
   }, [handleConnectChange])
+
+  // Polling de vigilância de emails (a cada 2 min quando app está visível)
+  useEffect(() => {
+    if (!watches.length || !isGoogleConnected()) return
+
+    const poll = async () => {
+      if (document.hidden) return
+      const result = await fetchRecentEmails(10)
+      if (!Array.isArray(result) || !result.length) return
+
+      const lastId = getLastEmailId()
+      if (!lastId) { setLastEmailId(result[0].id); return }
+
+      const newEmails = []
+      for (const email of result) {
+        if (email.id === lastId) break
+        newEmails.push(email)
+      }
+      if (!newEmails.length) return
+      setLastEmailId(result[0].id)
+
+      for (const email of newEmails) {
+        const matched = matchWatches(email, watches)
+        for (const watch of matched) {
+          const from = email.from.replace(/<[^>]+>/, '').trim()
+          scheduleNotification(`📧 Email de ${from}`, email.subject, new Date().toISOString())
+          setMessages(prev => {
+            const msg = { id: crypto.randomUUID(), role: 'assistant', ts: new Date().toISOString(),
+              content: `📧 **Email recebido de "${watch.label}"!**\n\n**De:** ${from}\n**Assunto:** ${email.subject}\n\n${email.snippet}` }
+            const trimmed = [...prev, msg].slice(-100)
+            localStorage.setItem('toki_chat', JSON.stringify(trimmed))
+            return trimmed
+          })
+        }
+      }
+    }
+
+    poll()
+    const interval = setInterval(poll, 2 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [watches])
 
   const addMsg = (role, content) => {
     const msg = { id: crypto.randomUUID(), role, content, ts: new Date().toISOString() }
@@ -263,6 +306,36 @@ export default function App() {
       }
 
       if (intent === 'list_notes') setTab('notes')
+
+      // Vigilância de emails
+      if (intent === 'watch_email' && (data?.sender || data?.subject)) {
+        const entry = addWatch({ sender: data.sender, subject: data.subject, label: data.label })
+        if (!getLastEmailId()) {
+          fetchRecentEmails(1).then(r => { if (Array.isArray(r) && r.length) setLastEmailId(r[0].id) })
+        }
+        setWatches(loadWatches())
+      }
+
+      if (intent === 'unwatch_email' && data?.label) {
+        const ws = loadWatches()
+        const target = ws.find(w => w.label.toLowerCase().includes(data.label.toLowerCase()))
+        if (target) { removeWatch(target.id); setWatches(loadWatches()) }
+      }
+
+      if (intent === 'list_watches') {
+        const ws = loadWatches()
+        if (!ws.length) {
+          addMsg('assistant', 'Não há emails sendo monitorados no momento.')
+        } else {
+          const lines = ws.map(w => {
+            const parts = []
+            if (w.sender) parts.push(`remetente: ${w.sender}`)
+            if (w.subject) parts.push(`assunto: ${w.subject}`)
+            return `  • **${w.label}** (${parts.join(', ')})`
+          }).join('\n')
+          addMsg('assistant', `📧 **Emails monitorados (${ws.length}):**\n${lines}`)
+        }
+      }
 
       // Email
       if (intent === 'read_emails') {

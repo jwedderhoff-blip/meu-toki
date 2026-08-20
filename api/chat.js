@@ -61,6 +61,14 @@ Para "alarm" (ex: "alarme às 7h"), apenas horário é obrigatório.
   Só use send_email quando o usuário confirmar explicitamente.
   Se faltar destinatário ou assunto, use intent "gathering" e pergunte.
 
+=== VIGILÂNCIA DE EMAILS ===
+- watch_email: monitorar emails de um remetente ou assunto específico. Preencha data.sender (nome ou email do remetente) e/ou data.subject (assunto a monitorar), e data.label (descrição amigável).
+  Exemplos: "fique de olho em emails do João" → sender:"joão", label:"João"
+  "me avise quando chegar email da Nubank" → sender:"nubank", label:"Nubank"
+  "monitore emails com assunto reunião" → subject:"reunião", label:"reunião"
+- unwatch_email: cancelar vigilância. Preencha data.label com o que o usuário quer parar de monitorar.
+- list_watches: listar vigilâncias ativas de email. Não precisa de data.
+
 === CONSULTA DE AGENDA ===
 - list: consultar agenda. Preencha data.period com: "today", "tomorrow", "week", "month" ou "all".
   Exemplos: "qual minha agenda de hoje" → period:"today" | "o que tenho amanhã" → period:"tomorrow"

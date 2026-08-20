@@ -11,14 +11,25 @@ async function gmailFetch(url, options = {}) {
   return res
 }
 
-// Busca os N emails mais recentes
+// Busca os N emails mais recentes. Retorna null em erro, [] se vazio.
 export async function fetchRecentEmails(maxResults = 8) {
-  if (!getToken()) return null
+  if (!getToken()) {
+    console.warn('[gmail] sem token')
+    return { error: 'no_token' }
+  }
 
   const listRes = await gmailFetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&q=in:inbox`
   )
-  if (!listRes?.ok) return null
+  if (!listRes) {
+    console.warn('[gmail] token expirado ou inválido (401)')
+    return { error: 'auth' }
+  }
+  if (!listRes.ok) {
+    const body = await listRes.json().catch(() => ({}))
+    console.warn('[gmail] erro API', listRes.status, body)
+    return { error: listRes.status === 403 ? 'forbidden' : 'api', status: listRes.status, details: body?.error?.message }
+  }
   const { messages = [] } = await listRes.json()
   if (!messages.length) return []
 

@@ -103,9 +103,15 @@ export default function App() {
         setEmailLoading(true)
         const result = await fetchRecentEmails(10)
         setEmailLoading(false)
-        if (result === null) {
-          addMsg('assistant', 'Não consegui acessar o Gmail. Tente desconectar e reconectar o Google.')
-        } else if (result.length === 0) {
+        if (result?.error) {
+          const msgs = {
+            no_token: 'Não estou conectado ao Google. Use o menu para sincronizar.',
+            auth: 'Token expirado. Abra o menu e toque em **Sincronizar agenda** para renovar.',
+            forbidden: 'Sem permissão para acessar o Gmail. Pode ser que a API do Gmail não esteja ativada no Google Cloud, ou você precisa reconectar a conta para incluir o escopo de email.',
+            api: `Erro da API Gmail (${result.status}): ${result.details || 'tente novamente.'}`
+          }
+          addMsg('assistant', msgs[result.error] || 'Erro ao acessar o Gmail.')
+        } else if (!result || result.length === 0) {
           addMsg('assistant', 'Sua caixa de entrada está vazia.')
         } else {
           setEmails(result)
@@ -242,7 +248,7 @@ export default function App() {
     setEmailLoading(true)
     const result = await fetchRecentEmails(10)
     setEmailLoading(false)
-    if (result) setEmails(result)
+    if (Array.isArray(result)) setEmails(result)
   }, [])
 
   // Carrega emails ao abrir a aba

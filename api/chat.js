@@ -62,11 +62,11 @@ module.exports = async function handler(req, res) {
     const json = await groqRes.json()
     let text = json.choices?.[0]?.message?.content || '{}'
 
-    // remove bloco <think>...</think> do Qwen
+    // remove blocos <think> e raciocínio em texto antes do JSON
     text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
 
-    // extrai o JSON mais externo do texto
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    // procura o JSON que contém "reply" (ignora JSONs parciais do raciocínio)
+    const jsonMatch = text.match(/\{"reply"[\s\S]*\}/) || text.match(/\{[\s\S]*"reply"[\s\S]*\}/)
     let parsed
     try {
       const raw = JSON.parse(jsonMatch ? jsonMatch[0] : text)

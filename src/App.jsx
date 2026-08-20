@@ -14,6 +14,7 @@ import { openAndroidAlarm, openAndroidTimer, extractTime, isAndroid, formatDurat
 import { addGoogleTask, addGoogleTaskList } from './services/googleTasks'
 import { fetchRecentEmails, sendEmail } from './services/gmail'
 import { loadWatches, addWatch, removeWatch, getLastEmailId, setLastEmailId, matchWatches } from './services/emailWatch'
+import { speak, stopSpeaking, loadVoices } from './services/tts'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
@@ -50,6 +51,8 @@ export default function App() {
   const [wakeListening, setWakeListening] = useState(false)
   const [continuous, setContinuous] = useState(() => localStorage.getItem('toki_continuous') === '1')
   const continuousRef = useRef(continuous)
+  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('toki_tts') === '1')
+  const ttsRef = useRef(ttsEnabled)
   const menuRef = useRef(null)
 
   const syncFromGoogle = useCallback(async () => {
@@ -133,10 +136,12 @@ export default function App() {
       localStorage.setItem('toki_chat', JSON.stringify(trimmed))
       return trimmed
     })
+    if (role === 'assistant' && ttsRef.current) speak(content)
   }
 
   const handleResult = useCallback(async (transcript) => {
     if (!transcript) return
+    stopSpeaking() // para voz anterior ao receber novo comando
     addMsg('user', transcript)
     setLoading(true)
     setError(null)
@@ -365,6 +370,17 @@ export default function App() {
   }, [messages, start])
 
   useEffect(() => { continuousRef.current = continuous }, [continuous])
+  useEffect(() => { ttsRef.current = ttsEnabled }, [ttsEnabled])
+
+  // Pré-carrega vozes na inicialização
+  useEffect(() => { loadVoices() }, [])
+
+  const toggleTts = () => {
+    const next = !ttsEnabled
+    setTtsEnabled(next)
+    localStorage.setItem('toki_tts', next ? '1' : '0')
+    if (!next) stopSpeaking()
+  }
 
   const toggleContinuous = () => {
     const next = !continuous
@@ -492,6 +508,9 @@ export default function App() {
                 <div className={styles.menuEmail}>{user.email}</div>
               </div>
             )}
+            <button className={styles.menuItem} onClick={() => { toggleTts(); setMenuOpen(false) }}>
+              {ttsEnabled ? '🔇 Desativar voz do Toki' : '🔊 Ativar voz do Toki'}
+            </button>
             <button className={styles.menuItem} onClick={() => { toggleWake(); setMenuOpen(false) }}>
               {wakeEnabled ? '🎙 Desativar "Ei Toki"' : '🎙 Ativar "Ei Toki"'}
             </button>

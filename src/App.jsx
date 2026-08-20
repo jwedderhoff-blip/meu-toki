@@ -88,7 +88,20 @@ export default function App() {
 
     try {
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
-      const { reply, intent, data } = await sendToToki(transcript, history)
+
+      // Pré-carrega agenda quando a pergunta parece ser sobre compromissos
+      const agendaKeywords = /agenda|compromisso|reunião|evento|hoje|amanhã|semana|mês|horário|tenho hoje|tenho amanhã/i
+      let context = null
+      if (agendaKeywords.test(transcript) && isGoogleConnected()) {
+        const period = /amanhã/i.test(transcript) ? 'tomorrow'
+          : /semana/i.test(transcript) ? 'week'
+          : /mês/i.test(transcript) ? 'month'
+          : 'today'
+        const events = await fetchFromGoogleCalendar(period)
+        context = { events: events || [], period }
+      }
+
+      const { reply, intent, data } = await sendToToki(transcript, history, context)
       addMsg('assistant', reply)
 
       // Compromissos no Google Agenda

@@ -54,8 +54,11 @@ Para "alarm" (ex: "alarme às 7h"), apenas horário é obrigatório.
 - shopping: lista de compras. Preencha title e items (array de strings com cada item). Ex: "lista de compras: leite, pão, ovos" → title:"Lista de compras", items:["Leite","Pão","Ovos"]
 - checklist: lista de tarefas/afazeres. Preencha title e items. Ex: "cria checklist do projeto" → items com cada tarefa separada.
 
-=== CONSULTA ===
-- list: ver agenda de compromissos
+=== CONSULTA DE AGENDA ===
+- list: consultar agenda. Preencha data.period com: "today", "tomorrow", "week", "month" ou "all".
+  Exemplos: "qual minha agenda de hoje" → period:"today" | "o que tenho amanhã" → period:"tomorrow"
+  "minha semana" → period:"week" | "compromissos do mês" → period:"month"
+  Se os eventos já estiverem no contexto (EVENTOS DA AGENDA), use-os para responder diretamente.
 - list_notes: ver notas e listas salvas
 - delete: apagar compromisso ou nota (informe id se disponível)
 - question: pergunta geral
@@ -70,15 +73,30 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { transcript, history = [] } = req.body || {}
+  const { transcript, history = [], context = null } = req.body || {}
   if (!transcript) return res.status(400).json({ error: 'transcript obrigatório' })
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY não configurada' })
 
   try {
+    // Injeta eventos do Google Agenda como contexto quando disponível
+    let contextBlock = ''
+    if (context?.events?.length > 0) {
+      const lines = context.events.map(e => {
+        const dt = e.datetime ? new Date(e.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }) : 'sem horário'
+        const parts = [`- ${e.title} (${dt})`]
+        if (e.location) parts.push(`  Local: ${e.location}`)
+        if (e.with_whom) parts.push(`  Com: ${e.with_whom}`)
+        return parts.join('\n')
+      }).join('\n')
+      contextBlock = `\n\nEVENTOS DA AGENDA (${context.period || 'período solicitado'}):\n${lines}\n\nUse esses dados para responder sobre a agenda do usuário.`
+    } else if (context?.events) {
+      contextBlock = `\n\nAGENDA ${context.period ? `(${context.period})` : ''}: Nenhum evento encontrado neste período.`
+    }
+
     const messages = [
-      { role: 'system', content: buildSystem() },
+      { role: 'system', content: buildSystem() + contextBlock },
       ...history.map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: transcript }
     ]

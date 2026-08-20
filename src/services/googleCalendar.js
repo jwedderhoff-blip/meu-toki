@@ -138,19 +138,39 @@ export async function fetchUserProfile() {
   return profile
 }
 
-export async function fetchFromGoogleCalendar() {
+// period: 'today' | 'tomorrow' | 'week' | 'month' | 'all'
+export async function fetchFromGoogleCalendar(period = 'all') {
   if (!_token) return null
 
-  const timeMin = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const timeMax = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+  const now = new Date()
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const endOfDay   = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59)
+
+  let timeMin, timeMax
+  if (period === 'today') {
+    timeMin = startOfDay(now).toISOString()
+    timeMax = endOfDay(now).toISOString()
+  } else if (period === 'tomorrow') {
+    const tom = new Date(now); tom.setDate(now.getDate() + 1)
+    timeMin = startOfDay(tom).toISOString()
+    timeMax = endOfDay(tom).toISOString()
+  } else if (period === 'week') {
+    timeMin = now.toISOString()
+    timeMax = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  } else if (period === 'month') {
+    timeMin = now.toISOString()
+    timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  } else {
+    timeMin = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    timeMax = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+  }
 
   const params = new URLSearchParams({
     timeMin,
     timeMax,
-    q: TOKI_TAG,
     singleEvents: 'true',
     orderBy: 'startTime',
-    maxResults: '100'
+    maxResults: '50'
   })
 
   const res = await gcalFetch(

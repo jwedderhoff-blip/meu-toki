@@ -53,6 +53,7 @@ export default function App() {
   const continuousRef = useRef(continuous)
   const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('toki_tts') === '1')
   const ttsRef = useRef(ttsEnabled)
+  const startRef = useRef(null)
   const menuRef = useRef(null)
 
   const syncFromGoogle = useCallback(async () => {
@@ -364,10 +365,10 @@ export default function App() {
       setLoading(false)
       // Modo contínuo: reinicia microfone após resposta
       if (continuousRef.current) {
-        setTimeout(() => { if (continuousRef.current) start() }, 800)
+        setTimeout(() => { if (continuousRef.current) startRef.current?.() }, 800)
       }
     }
-  }, [messages, start])
+  }, [messages])
 
   useEffect(() => { continuousRef.current = continuous }, [continuous])
   useEffect(() => { ttsRef.current = ttsEnabled }, [ttsEnabled])
@@ -390,23 +391,22 @@ export default function App() {
 
   const handleError = useCallback((msg) => setError(msg), [])
   const { listening, interim, start, stop } = useSpeechRecognition({ onResult: handleResult, onError: handleError })
+  useEffect(() => { startRef.current = start }, [start])
 
   // Wake word: "Ei Toki"
   const handleWake = useCallback((commandAfter) => {
     setTab('chat')
     setWakeListening(true)
     if (commandAfter) {
-      // Comando veio junto com a wake word — processa direto
       setWakeListening(false)
       handleResult(commandAfter)
     } else {
-      // Aguarda próxima fala como comando
       setTimeout(() => {
         setWakeListening(false)
-        start()
+        startRef.current?.()
       }, 300)
     }
-  }, [handleResult, start])
+  }, [handleResult])
 
   const { active: wakeActive } = useWakeWord({
     enabled: wakeEnabled && !listening,

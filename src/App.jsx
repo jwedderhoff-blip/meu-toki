@@ -1,9 +1,12 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useSpeechRecognition } from './hooks/useSpeechRecognition'
 import { sendToToki } from './services/api'
-import { addEvent, deleteEvent, loadEvents } from './services/storage'
+import { addEvent, deleteEvent, loadEvents, updateEvent } from './services/storage'
 import { requestPermission, scheduleNotification, restoreScheduled } from './services/notifications'
-import { initGoogleCalendar, connectGoogle, disconnectGoogle, isGoogleConnected, pushToGoogleCalendar } from './services/googleCalendar'
+import {
+  initGoogleCalendar, connectGoogle, disconnectGoogle, isGoogleConnected,
+  pushToGoogleCalendar, fetchFromGoogleCalendar, deleteFromGoogleCalendar
+} from './services/googleCalendar'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
@@ -18,14 +21,39 @@ export default function App() {
   const [tab, setTab] = useState('chat')
   const [error, setError] = useState(null)
   const [gcalConnected, setGcalConnected] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+
+  // Carrega eventos do Google Agenda e sincroniza com localStorage
+  const syncFromGoogle = useCallback(async () => {
+    setSyncing(true)
+    const gcalEvents = await fetchFromGoogleCalendar()
+    setSyncing(false)
+    if (gcalEvents) {
+      // Substitui eventos locais pelos do Google (fonte de verdade)
+      localStorage.setItem('toki_events', JSON.stringify(gcalEvents))
+      setEvents(gcalEvents)
+      restoreScheduled(gcalEvents)
+    }
+  }, [])
+
+  const handleConnectChange = useCallback(async (connected) => {
+    setGcalConnected(connected)
+    if (connected) {
+      await syncFromGoogle()
+    } else {
+      // Desconectado: usa eventos locais
+      const local = loadEvents()
+      setEvents(local)
+    }
+  }, [syncFromGoogle])
 
   useEffect(() => {
     const evs = loadEvents()
     setEvents(evs)
     restoreScheduled(evs)
     requestPermission()
-    if (HAS_GCAL) initGoogleCalendar(setGcalConnected)
-  }, [])
+    if (HAS_GCAL) initGoogleCalendar(handleConnectChange)
+  }, [handleConnectChange])
 
   const addMsg = (role, content) => {
     const msg = { id: crypto.randomUUID(), role, content, ts: new Date().toISOString() }
@@ -50,16 +78,24 @@ export default function App() {
         if (newEvent.datetime) {
           scheduleNotification(newEvent.title, newEvent.notes || reply, newEvent.datetime)
 
-          // envia automaticamente ao Google Calendar se conectado
           if (isGoogleConnected()) {
-            const ok = await pushToGoogleCalendar(newEvent)
-            if (!ok) setError('Não foi possível adicionar ao Google Agenda. Reconecte.')
+            const gcalId = await pushToGoogleCalendar(newEvent)
+            if (gcalId) {
+              // Salva o ID do Google junto com o evento local
+              updateEvent(newEvent.id, { gcalId })
+            } else {
+              setError('Não foi possível adicionar ao Google Agenda. Reconecte.')
+            }
           }
         }
       }
 
       if (intent === 'delete' && data?.id) {
+        const evToDelete = loadEvents().find(e => e.id === data.id)
         deleteEvent(data.id)
+        if (evToDelete?.gcalId && isGoogleConnected()) {
+          deleteFromGoogleCalendar(evToDelete.gcalId)
+        }
         setEvents(loadEvents())
       }
 
@@ -81,8 +117,12 @@ export default function App() {
     onError: handleError
   })
 
-  const handleDeleteEvent = (id) => {
+  const handleDeleteEvent = async (id) => {
+    const evToDelete = events.find(e => e.id === id)
     deleteEvent(id)
+    if (evToDelete?.gcalId && isGoogleConnected()) {
+      deleteFromGoogleCalendar(evToDelete.gcalId)
+    }
     setEvents(loadEvents())
   }
 
@@ -102,7 +142,7 @@ export default function App() {
               onClick={handleGcal}
               title={gcalConnected ? 'Google Agenda conectado — clique para desconectar' : 'Conectar Google Agenda'}
             >
-              {gcalConnected ? '📅 ✓' : '📅'}
+              {syncing ? '⏳' : gcalConnected ? '📅 ✓' : '📅'}
             </button>
           )}
           <nav className={styles.nav}>
@@ -128,7 +168,9 @@ export default function App() {
           <div className={styles.eventsScroll}>
             <EventList events={events} onDelete={handleDeleteEvent} />
             {!events.length && (
-              <p className={styles.eventsEmpty}>Nenhum agendamento ainda.</p>
+              <p className={styles.eventsEmpty}>
+                {gcalConnected ? 'Nenhum agendamento encontrado no Google Agenda.' : 'Nenhum agendamento ainda.'}
+              </p>
             )}
           </div>
         )}

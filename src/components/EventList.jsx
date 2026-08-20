@@ -6,12 +6,6 @@ const TYPE_ICON = {
   alarm:    '⏰',
 }
 
-const TYPE_LABEL = {
-  reminder: 'Lembrete',
-  event:    'Evento',
-  alarm:    'Alarme',
-}
-
 export function EventList({ events, onDelete }) {
   if (!events.length) return null
 
@@ -45,9 +39,19 @@ function EventCard({ event, onDelete, past }) {
         {event.datetime && (
           <p className={styles.dt}>{formatDatetime(event.datetime)}</p>
         )}
-        {event.location && <p className={styles.notes}>📍 {event.location}</p>}
-        {event.with_whom && <p className={styles.notes}>👤 {event.with_whom}</p>}
-        {event.notes && <p className={styles.notes}>{event.notes}</p>}
+        {event.location && <p className={styles.meta}>📍 {event.location}</p>}
+        {event.with_whom && <p className={styles.meta}>👤 {event.with_whom}</p>}
+        {event.notes && <p className={styles.meta}>{event.notes}</p>}
+        {event.datetime && (
+          <a
+            href={buildGCalUrl(event)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.gcal}
+          >
+            + Google Agenda
+          </a>
+        )}
       </div>
       <button
         className={styles.del}
@@ -56,6 +60,26 @@ function EventCard({ event, onDelete, past }) {
       >×</button>
     </div>
   )
+}
+
+function buildGCalUrl(event) {
+  const start = toGCalDate(event.datetime)
+  // duração padrão: 1 hora
+  const end = toGCalDate(new Date(new Date(event.datetime).getTime() + 60 * 60 * 1000).toISOString())
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: event.title || '',
+    dates: `${start}/${end}`,
+    details: [event.notes, event.with_whom ? `Com: ${event.with_whom}` : ''].filter(Boolean).join('\n'),
+    location: event.location || '',
+  })
+
+  return `https://calendar.google.com/calendar/render?${params}`
+}
+
+function toGCalDate(dt) {
+  return new Date(dt).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
 }
 
 function formatDatetime(dt) {

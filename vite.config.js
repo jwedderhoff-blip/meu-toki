@@ -24,6 +24,22 @@ export default defineConfig({
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        ],
+        shortcuts: [
+          {
+            name: 'Nova anotação',
+            short_name: 'Nota',
+            description: 'Criar nota ou lista rápida',
+            url: '/?tab=notes',
+            icons: [{ src: 'icon-192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Agenda',
+            short_name: 'Agenda',
+            description: 'Ver compromissos',
+            url: '/?tab=events',
+            icons: [{ src: 'icon-192.png', sizes: '192x192' }]
+          }
         ]
       },
       workbox: {

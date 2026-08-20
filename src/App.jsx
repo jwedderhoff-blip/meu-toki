@@ -9,7 +9,8 @@ import {
   fetchUserProfile
 } from './services/googleCalendar'
 import { loadNotes, addNote, deleteNote } from './services/notes'
-import { openAndroidAlarm, openAndroidTimer, extractTime } from './services/android'
+import { openAndroidAlarm, openAndroidTimer, extractTime, isAndroid, formatDuration } from './services/android'
+import { addGoogleTask, addGoogleTaskList } from './services/googleTasks'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
@@ -26,7 +27,10 @@ export default function App() {
   const [events, setEvents] = useState([])
   const [notes, setNotes] = useState(() => loadNotes())
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState('chat')
+  const [tab, setTab] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get('tab')
+    return ['chat','events','notes'].includes(p) ? p : 'chat'
+  })
   const [error, setError] = useState(null)
   const [gcalConnected, setGcalConnected] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -111,7 +115,12 @@ export default function App() {
 
       // Cronômetro no Android
       if (intent === 'timer' && data?.duration_seconds) {
-        openAndroidTimer(data.duration_seconds, data.title)
+        const opened = openAndroidTimer(data.duration_seconds, data.title)
+        if (!opened) {
+          // Não Android: agenda notificação como fallback
+          const future = new Date(Date.now() + data.duration_seconds * 1000).toISOString()
+          scheduleNotification(data.title || 'Cronômetro', `Tempo de ${formatDuration(data.duration_seconds)} encerrado!`, future)
+        }
       }
 
       // Notas e listas
@@ -121,7 +130,21 @@ export default function App() {
         }))
         addNote({ type: intent, title: data.title, content: data.content || null, items: items || [] })
         setNotes(loadNotes())
+
+        // Sincroniza com Google Tasks se conectado
+        if (isGoogleConnected()) {
+          if (items?.length > 0) {
+            addGoogleTaskList({ title: data.title, items: data.items })
+          } else {
+            addGoogleTask({ title: data.title, notes: data.content })
+          }
+        }
         setTab('notes')
+      }
+
+      // Reminder também vai para Google Tasks
+      if (intent === 'reminder' && data?.title && isGoogleConnected()) {
+        addGoogleTask({ title: data.title, notes: data.notes, due: data.datetime })
       }
 
       // Apagar

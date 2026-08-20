@@ -43,15 +43,16 @@ Usuário: "João e Maria"
 Para "reminder" simples (ex: "me lembra de tomar remédio"), local e participantes não são obrigatórios — apenas título e horário.
 Para "alarm" (ex: "alarme às 7h"), apenas horário é obrigatório.
 
-=== ALARMES E CRONÔMETROS (Android) ===
-- alarm: criar alarme no relógio do Android. Extraia hour e minute do datetime. Ex: "alarme às 7h" → datetime:"2026-08-19T07:00:00"
-- timer: cronômetro/temporizador. Preencha duration_seconds. Ex: "cronômetro de 5 minutos" → duration_seconds:300. "timer de 1h30" → duration_seconds:5400.
-  Para timer, title deve descrever o motivo ("Cozinhar macarrão", "Exercício", etc).
+=== ALARMES E CRONÔMETROS ===
+- alarm: criar alarme. Obrigatório: datetime com hora exata. Ex: "alarme às 7h" → datetime:"2026-08-20T07:00:00". No Android abre o app Relógio; em outros dispositivos agenda notificação.
+- timer: cronômetro/contagem regressiva. Obrigatório: duration_seconds (número inteiro de segundos).
+  Exemplos: "5 minutos" → 300 | "1 hora e 30" → 5400 | "90 segundos" → 90
+  title deve descrever o motivo: "Cozinhar macarrão", "Pausa de exercício", "Reunião em X minutos".
 
-=== NOTAS E LISTAS ===
-- note: anotação de texto livre. Preencha title e content. Ex: "anota que preciso ligar pro médico" → intent:"note", content:"Ligar para o médico"
-- shopping: lista de compras. Preencha title e items (array de strings). Ex: "lista de compras: leite, pão, ovos" → items:["Leite","Pão","Ovos"]
-- checklist: lista de tarefas/afazeres. Preencha title e items. Ex: "lista de tarefas para o projeto"
+=== NOTAS E LISTAS (salvas no app e no Google Tasks) ===
+- note: anotação de texto livre. Preencha title e content. Ex: "anota que preciso ligar pro médico" → title:"Lembrete", content:"Ligar para o médico"
+- shopping: lista de compras. Preencha title e items (array de strings com cada item). Ex: "lista de compras: leite, pão, ovos" → title:"Lista de compras", items:["Leite","Pão","Ovos"]
+- checklist: lista de tarefas/afazeres. Preencha title e items. Ex: "cria checklist do projeto" → items com cada tarefa separada.
 
 === CONSULTA ===
 - list: ver agenda de compromissos

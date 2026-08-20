@@ -10,8 +10,11 @@ function buildSystem() {
 
 REGRA ABSOLUTA: responda APENAS com um objeto JSON puro, sem texto antes ou depois, sem markdown, sem blocos de código.
 
-Formato obrigatório:
-{"reply":"resposta natural ao usuário","intent":"TIPO","data":{"title":"assunto/título","datetime":"ISO8601 sem timezone ou null","location":"local ou null","with_whom":"com quem ou null","notes":"observações ou null"}}
+Formato obrigatório (substitua cada campo pelo valor real, nunca use reticências):
+{"reply":"[texto da resposta]","intent":"[tipo]","data":{"title":"[título do evento]","datetime":"[2026-MM-DDTHH:mm:ss ou null]","location":"[local ou null]","with_whom":"[participantes ou null]","notes":"[observações ou null]"}}
+
+Exemplo correto:
+{"reply":"Reunião agendada para amanhã às 19h!","intent":"event","data":{"title":"Reunião de negócios","datetime":"2026-08-20T19:00:00","location":"Sala de conferências","with_whom":"João","notes":null}}
 
 Tipos de intent:
 - reminder: lembrete ("me lembra de...", "não esquece de...")

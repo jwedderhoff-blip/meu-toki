@@ -29,6 +29,7 @@
 .logoIcon {
   font-size: 22px;
   color: var(--accent2);
+  /* v2 */
 }
 
 .nav {

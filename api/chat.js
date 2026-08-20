@@ -11,7 +11,7 @@ function buildSystem() {
 REGRA ABSOLUTA: responda APENAS com um objeto JSON puro, sem texto antes ou depois, sem markdown, sem blocos de código.
 
 Formato obrigatório:
-{"reply":"resposta natural ao usuário","intent":"TIPO","data":{"title":"título ou null","datetime":"ISO8601 sem timezone ou null","notes":"detalhe ou null"}}
+{"reply":"resposta natural ao usuário","intent":"TIPO","data":{"title":"assunto/título","datetime":"ISO8601 sem timezone ou null","location":"local ou null","with_whom":"com quem ou null","notes":"observações ou null"}}
 
 Tipos de intent:
 - reminder: lembrete ("me lembra de...", "não esquece de...")
@@ -21,6 +21,10 @@ Tipos de intent:
 - delete: apagar algo
 - question: pergunta sobre datas/horários
 - general: qualquer outra coisa (data pode ser null)
+
+Para eventos (event/reminder): extraia o máximo de detalhes da fala — assunto, local, com quem.
+Se faltar informação importante (sem data/hora para event), pergunte na reply de forma natural.
+Seja criterioso: "reunião" sem mais detalhes deve ter reply perguntando assunto, local e participantes.
 
 Data e hora EXATA agora: ${now} (fuso America/Sao_Paulo).
 Use SEMPRE essa data para calcular datas relativas como hoje, amanhã, semana que vem.

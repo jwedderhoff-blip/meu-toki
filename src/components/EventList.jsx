@@ -45,6 +45,8 @@ function EventCard({ event, onDelete, past }) {
         {event.datetime && (
           <p className={styles.dt}>{formatDatetime(event.datetime)}</p>
         )}
+        {event.location && <p className={styles.notes}>📍 {event.location}</p>}
+        {event.with_whom && <p className={styles.notes}>👤 {event.with_whom}</p>}
         {event.notes && <p className={styles.notes}>{event.notes}</p>}
       </div>
       <button

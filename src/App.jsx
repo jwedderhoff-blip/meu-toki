@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useSpeechRecognition } from './hooks/useSpeechRecognition'
+import { useWakeWord } from './hooks/useWakeWord'
 import { sendToToki } from './services/api'
 import { addEvent, deleteEvent, loadEvents, updateEvent } from './services/storage'
 import { requestPermission, scheduleNotification, restoreScheduled } from './services/notifications'
@@ -45,6 +46,8 @@ export default function App() {
   })
   const [menuOpen, setMenuOpen] = useState(false)
   const [watches, setWatches] = useState(() => loadWatches())
+  const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem('toki_wake') === '1')
+  const [wakeListening, setWakeListening] = useState(false)
   const menuRef = useRef(null)
 
   const syncFromGoogle = useCallback(async () => {
@@ -358,6 +361,34 @@ export default function App() {
   const handleError = useCallback((msg) => setError(msg), [])
   const { listening, interim, start, stop } = useSpeechRecognition({ onResult: handleResult, onError: handleError })
 
+  // Wake word: "Ei Toki"
+  const handleWake = useCallback((commandAfter) => {
+    setTab('chat')
+    setWakeListening(true)
+    if (commandAfter) {
+      // Comando veio junto com a wake word — processa direto
+      setWakeListening(false)
+      handleResult(commandAfter)
+    } else {
+      // Aguarda próxima fala como comando
+      setTimeout(() => {
+        setWakeListening(false)
+        start()
+      }, 300)
+    }
+  }, [handleResult, start])
+
+  const { active: wakeActive } = useWakeWord({
+    enabled: wakeEnabled && !listening,
+    onWake: handleWake
+  })
+
+  const toggleWake = () => {
+    const next = !wakeEnabled
+    setWakeEnabled(next)
+    localStorage.setItem('toki_wake', next ? '1' : '0')
+  }
+
   const handleDeleteEvent = async (id) => {
     const ev = events.find(e => e.id === id)
     deleteEvent(id)
@@ -410,6 +441,15 @@ export default function App() {
           <span>Toki</span>
         </div>
         <div className={styles.headerRight}>
+          {wakeEnabled && (
+            <button
+              onClick={toggleWake}
+              className={`${styles.wakeBadge} ${wakeActive || wakeListening ? styles.wakeActive : ''}`}
+              title="Escuta contínua ativa — diga 'Ei Toki'"
+            >
+              🎙 {wakeListening ? 'ouvindo…' : 'Ei Toki'}
+            </button>
+          )}
           {gcalConnected && !syncing && (
             <span className={styles.gcalBadge}>📅 conectado</span>
           )}
@@ -438,6 +478,9 @@ export default function App() {
                 <div className={styles.menuEmail}>{user.email}</div>
               </div>
             )}
+            <button className={styles.menuItem} onClick={() => { toggleWake(); setMenuOpen(false) }}>
+              {wakeEnabled ? '🎙 Desativar "Ei Toki"' : '🎙 Ativar "Ei Toki"'}
+            </button>
             <button className={styles.menuItem} onClick={() => { connectGoogle(); setMenuOpen(false) }}>
               🔄 Sincronizar agenda
             </button>

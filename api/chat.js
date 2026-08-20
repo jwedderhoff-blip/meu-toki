@@ -1,4 +1,4 @@
-import Groq from 'groq-sdk'
+const Groq = require('groq-sdk')
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -40,7 +40,7 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v))
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).end()

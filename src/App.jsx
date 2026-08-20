@@ -89,16 +89,37 @@ export default function App() {
     try {
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
 
-      // Pré-carrega agenda quando a pergunta parece ser sobre compromissos
-      const agendaKeywords = /agenda|compromisso|reunião|evento|hoje|amanhã|semana|mês|horário|tenho hoje|tenho amanhã/i
+      // Detecta consultas de agenda e busca eventos antes de chamar o AI
+      const agendaQuery = /agenda|compromisso|o que (tenho|tem)|tenho (hoje|amanhã)|minha semana|eventos (de|do|da)/i
       let context = null
-      if (agendaKeywords.test(transcript) && isGoogleConnected()) {
+      if (agendaQuery.test(transcript) && isGoogleConnected()) {
         const period = /amanhã/i.test(transcript) ? 'tomorrow'
           : /semana/i.test(transcript) ? 'week'
-          : /mês/i.test(transcript) ? 'month'
+          : /m[eê]s/i.test(transcript) ? 'month'
           : 'today'
         const events = await fetchFromGoogleCalendar(period)
         context = { events: events || [], period }
+
+        // Responde diretamente com os eventos sem passar pelo AI (mais confiável)
+        const periodLabel = { today: 'hoje', tomorrow: 'amanhã', week: 'nos próximos 7 dias', month: 'nos próximos 30 dias' }[period] || period
+        if (context.events.length === 0) {
+          addMsg('assistant', `Você não tem compromissos agendados ${periodLabel}.`)
+          setLoading(false)
+          return
+        }
+        const lines = context.events.map(e => {
+          const dt = e.datetime
+            ? new Date(e.datetime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })
+            : 'sem horário definido'
+          let line = `📅 **${e.title}** — ${dt}`
+          if (e.location) line += `\n   📍 ${e.location}`
+          if (e.with_whom) line += `\n   👤 ${e.with_whom}`
+          return line
+        }).join('\n\n')
+        addMsg('assistant', `Sua agenda ${periodLabel}:\n\n${lines}`)
+        setTab('events')
+        setLoading(false)
+        return
       }
 
       const { reply, intent, data } = await sendToToki(transcript, history, context)

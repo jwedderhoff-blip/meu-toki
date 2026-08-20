@@ -7,114 +7,210 @@
   position: relative;
 }
 
+/* ── HEADER ── */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px 12px;
+  padding: 14px 20px 10px;
   border-bottom: 1px solid var(--bg3);
   flex-shrink: 0;
+  position: relative;
+  z-index: 10;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 600;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--text);
   letter-spacing: -0.02em;
 }
 
 .logoIcon {
-  font-size: 22px;
+  font-size: 24px;
   color: var(--accent2);
-  /* v2 */
 }
 
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.gcalBtn {
-  background: var(--bg2);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 16px;
-  color: var(--text2);
-  transition: all 0.15s;
-}
-
-.gcalBtn.gcalOn {
+.gcalBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(16,185,129,0.15);
   color: var(--success);
-  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16,185,129,0.3);
 }
 
-.syncing {
-  font-size: 16px;
-  opacity: 0.6;
-}
-
-.userBtn {
-  background: none;
-  padding: 0;
+/* Avatar → abre menu */
+.avatarBtn {
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   overflow: hidden;
-  width: 32px;
-  height: 32px;
+  border: 2px solid var(--bg3);
   flex-shrink: 0;
+  transition: border-color 0.15s;
 }
 
+.avatarBtn:hover { border-color: var(--accent); }
+
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   display: block;
+  object-fit: cover;
 }
 
 .avatarFallback {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
   background: var(--accent);
   color: #fff;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.nav {
-  display: flex;
-  gap: 4px;
+/* ── DROPDOWN MENU ── */
+.menuOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.menu {
+  position: absolute;
+  top: 56px;
+  right: 16px;
   background: var(--bg2);
-  border-radius: 10px;
-  padding: 4px;
+  border: 1px solid var(--bg3);
+  border-radius: var(--radius-sm);
+  min-width: 200px;
+  box-shadow: var(--shadow);
+  z-index: 50;
+  overflow: hidden;
 }
 
-.navBtn {
-  position: relative;
-  padding: 6px 14px;
-  border-radius: 7px;
+.menuUser {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--bg3);
+}
+
+.menuName {
   font-size: 14px;
-  font-weight: 500;
-  color: var(--text2);
-  background: none;
-  transition: all 0.15s;
-}
-
-.navBtn.active {
-  background: var(--bg3);
+  font-weight: 600;
   color: var(--text);
 }
 
-.badge {
+.menuEmail {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.menuItem {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.1s;
+  background: none;
+}
+
+.menuItem:hover { background: var(--bg3); color: var(--text); }
+
+.menuItem.danger { color: #fca5a5; }
+.menuItem.danger:hover { background: rgba(239,68,68,0.1); }
+
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 12px;
+  padding-bottom: 16px;
+}
+
+.empty {
+  text-align: center;
+  color: var(--text3);
+  font-size: 15px;
+  padding: 60px 24px;
+  line-height: 1.6;
+}
+
+/* ── ERROR ── */
+.error {
+  margin: 0 16px 8px;
+  padding: 10px 14px;
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: #fca5a5;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── BOTTOM NAV ── */
+.bottomNav {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--bg3);
+  background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.navTab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  background: none;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.navTab.active { color: var(--accent2); }
+
+.navIcon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.navBadge {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: 8px;
+  right: calc(50% - 14px);
   min-width: 16px;
   height: 16px;
   border-radius: 8px;
@@ -128,40 +224,17 @@
   padding: 0 3px;
 }
 
-.main {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.eventsScroll {
-  flex: 1;
-  overflow-y: auto;
-  padding-top: 16px;
-}
-
-.eventsEmpty {
-  text-align: center;
-  color: var(--text3);
-  font-size: 15px;
-  padding: 48px 24px;
-}
-
-.error {
-  margin: 0 16px;
-  padding: 12px 16px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: #fca5a5;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.footer {
+/* ── INPUT AREA (chat) ── */
+.inputArea {
   flex-shrink: 0;
   border-top: 1px solid var(--bg3);
   background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.syncing {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text3);
+  padding: 4px 0 0;
 }

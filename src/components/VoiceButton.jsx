@@ -79,7 +79,7 @@ export function VoiceButton({ listening, interim, onStart, onStop, onText, disab
 
 function MicIcon({ listening }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
       <rect x="9" y="2" width="6" height="12" rx="3" fill={listening ? '#fff' : 'currentColor'} />
       <path d="M5 10a7 7 0 0 0 14 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
       <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

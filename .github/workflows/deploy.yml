@@ -1,37 +1,29 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (desativado)
 
+# Deploy desativado — app hospedado no Vercel: https://meu-toki.vercel.app
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
+    inputs:
+      confirm:
+        description: 'Digite "sim" para reativar o deploy no GitHub Pages'
+        required: true
 
 jobs:
   build:
+    if: ${{ github.event.inputs.confirm == 'sim' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - run: npm ci
       - run: npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_BASE_PATH: /meu-toki/
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -39,6 +31,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

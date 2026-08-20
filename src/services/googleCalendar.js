@@ -1,6 +1,9 @@
-const SCOPE = 'https://www.googleapis.com/auth/calendar.events'
+const SCOPE = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.email'
+].join(' ')
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-// Tag para identificar eventos criados pelo Toki
 const TOKI_TAG = '[toki]'
 
 let tokenClient = null
@@ -120,6 +123,17 @@ async function gcalFetch(url, options = {}) {
 }
 
 // Busca eventos do Google Agenda criados pelo Toki (próximos 90 dias + passados 30 dias)
+// Busca perfil do usuário logado
+export async function fetchUserProfile() {
+  if (!_token) return null
+  const res = await gcalFetch('https://www.googleapis.com/oauth2/v2/userinfo')
+  if (!res || !res.ok) return null
+  const { name, email, picture } = await res.json()
+  const profile = { name, email, picture }
+  localStorage.setItem('toki_user', JSON.stringify(profile))
+  return profile
+}
+
 export async function fetchFromGoogleCalendar() {
   if (!_token) return null
 

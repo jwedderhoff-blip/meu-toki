@@ -5,11 +5,13 @@ import { addEvent, deleteEvent, loadEvents, updateEvent } from './services/stora
 import { requestPermission, scheduleNotification, restoreScheduled } from './services/notifications'
 import {
   initGoogleCalendar, connectGoogle, disconnectGoogle, isGoogleConnected,
-  pushToGoogleCalendar, fetchFromGoogleCalendar, deleteFromGoogleCalendar
+  pushToGoogleCalendar, fetchFromGoogleCalendar, deleteFromGoogleCalendar,
+  fetchUserProfile
 } from './services/googleCalendar'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
+import { LoginScreen } from './components/LoginScreen'
 import styles from './App.module.css'
 
 const HAS_GCAL = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -22,14 +24,19 @@ export default function App() {
   const [error, setError] = useState(null)
   const [gcalConnected, setGcalConnected] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('toki_user')) } catch { return null }
+  })
 
-  // Carrega eventos do Google Agenda e sincroniza com localStorage
   const syncFromGoogle = useCallback(async () => {
     setSyncing(true)
-    const gcalEvents = await fetchFromGoogleCalendar()
+    const [gcalEvents, profile] = await Promise.all([
+      fetchFromGoogleCalendar(),
+      fetchUserProfile()
+    ])
     setSyncing(false)
+    if (profile) setUser(profile)
     if (gcalEvents) {
-      // Substitui eventos locais pelos do Google (fonte de verdade)
       localStorage.setItem('toki_events', JSON.stringify(gcalEvents))
       setEvents(gcalEvents)
       restoreScheduled(gcalEvents)
@@ -41,18 +48,21 @@ export default function App() {
     if (connected) {
       await syncFromGoogle()
     } else {
-      // Desconectado: usa eventos locais
-      const local = loadEvents()
-      setEvents(local)
+      setUser(null)
+      localStorage.removeItem('toki_user')
+      setEvents([])
     }
   }, [syncFromGoogle])
 
   useEffect(() => {
-    const evs = loadEvents()
-    setEvents(evs)
-    restoreScheduled(evs)
     requestPermission()
-    if (HAS_GCAL) initGoogleCalendar(handleConnectChange)
+    if (HAS_GCAL) {
+      initGoogleCalendar(handleConnectChange)
+    } else {
+      const evs = loadEvents()
+      setEvents(evs)
+      restoreScheduled(evs)
+    }
   }, [handleConnectChange])
 
   const addMsg = (role, content) => {
@@ -81,10 +91,9 @@ export default function App() {
           if (isGoogleConnected()) {
             const gcalId = await pushToGoogleCalendar(newEvent)
             if (gcalId) {
-              // Salva o ID do Google junto com o evento local
               updateEvent(newEvent.id, { gcalId })
             } else {
-              setError('Não foi possível adicionar ao Google Agenda. Reconecte.')
+              setError('Não foi possível adicionar ao Google Agenda.')
             }
           }
         }
@@ -126,7 +135,21 @@ export default function App() {
     setEvents(loadEvents())
   }
 
-  const handleGcal = () => gcalConnected ? disconnectGoogle() : connectGoogle()
+  const handleLogout = () => {
+    disconnectGoogle()
+    setUser(null)
+    setEvents([])
+    localStorage.removeItem('toki_user')
+    localStorage.removeItem('toki_events')
+  }
+
+  // Mostra login se tem integração Google mas usuário não está logado
+  if (HAS_GCAL && !gcalConnected && !syncing) {
+    const savedToken = localStorage.getItem('gcal_token')
+    if (!savedToken) {
+      return <LoginScreen onLogin={connectGoogle} />
+    }
+  }
 
   return (
     <div className={styles.app}>
@@ -136,13 +159,17 @@ export default function App() {
           <span>Toki</span>
         </div>
         <div className={styles.headerRight}>
-          {HAS_GCAL && (
+          {syncing && <span className={styles.syncing}>⏳</span>}
+          {user && (
             <button
-              className={`${styles.gcalBtn} ${gcalConnected ? styles.gcalOn : ''}`}
-              onClick={handleGcal}
-              title={gcalConnected ? 'Google Agenda conectado — clique para desconectar' : 'Conectar Google Agenda'}
+              className={styles.userBtn}
+              onClick={handleLogout}
+              title={`${user.name} — clique para sair`}
             >
-              {syncing ? '⏳' : gcalConnected ? '📅 ✓' : '📅'}
+              {user.picture
+                ? <img src={user.picture} alt={user.name} className={styles.avatar} />
+                : <span className={styles.avatarFallback}>{user.name?.[0]}</span>
+              }
             </button>
           )}
           <nav className={styles.nav}>
@@ -168,9 +195,7 @@ export default function App() {
           <div className={styles.eventsScroll}>
             <EventList events={events} onDelete={handleDeleteEvent} />
             {!events.length && (
-              <p className={styles.eventsEmpty}>
-                {gcalConnected ? 'Nenhum agendamento encontrado no Google Agenda.' : 'Nenhum agendamento ainda.'}
-              </p>
+              <p className={styles.eventsEmpty}>Nenhum agendamento encontrado no Google Agenda.</p>
             )}
           </div>
         )}

@@ -10,28 +10,47 @@ function buildSystem() {
 
 REGRA ABSOLUTA: responda APENAS com um objeto JSON puro, sem texto antes ou depois, sem markdown, sem blocos de código.
 
-Formato obrigatório (substitua cada campo pelo valor real, nunca use reticências):
-{"reply":"[texto da resposta]","intent":"[tipo]","data":{"title":"[título do evento]","datetime":"[2026-MM-DDTHH:mm:ss ou null]","location":"[local ou null]","with_whom":"[participantes ou null]","notes":"[observações ou null]"}}
+Formato obrigatório:
+{"reply":"[texto]","intent":"[tipo]","data":{"title":"[título]","datetime":"[2026-MM-DDTHH:mm:ss ou null]","location":"[local ou null]","with_whom":"[participantes ou null]","notes":"[obs ou null]"}}
 
-Exemplo correto:
-{"reply":"Reunião agendada para amanhã às 19h!","intent":"event","data":{"title":"Reunião de negócios","datetime":"2026-08-20T19:00:00","location":"Sala de conferências","with_whom":"João","notes":null}}
+=== REGRAS PARA AGENDAMENTO (event / reminder / alarm) ===
 
-Tipos de intent:
-- reminder: lembrete ("me lembra de...", "não esquece de...")
-- event: compromisso agendado ("reunião às 14h", "consulta sexta")
-- alarm: alarme ("todo dia às 7h", "alarme para 6h30")
-- list: ver agenda/lembretes
-- delete: apagar algo
-- question: pergunta sobre datas/horários
-- general: qualquer outra coisa (data pode ser null)
+NUNCA salve um evento incompleto. Antes de usar intent "event", "reminder" ou "alarm", você DEVE ter coletado:
+1. TÍTULO — qual é o evento/compromisso?
+2. DATA E HORA — quando será? (obrigatório para "event" e "alarm")
+3. LOCAL — onde será? (pergunte se não informado)
+4. PARTICIPANTES — quem vai estar presente? (pergunte se não informado)
 
-Para eventos (event/reminder): extraia o máximo de detalhes da fala — assunto, local, com quem.
-Se faltar informação importante (sem data/hora para event), pergunte na reply de forma natural.
-Seja criterioso: "reunião" sem mais detalhes deve ter reply perguntando assunto, local e participantes.
+Se QUALQUER uma dessas informações estiver faltando, use intent "gathering" e pergunte UMA informação por vez de forma natural e direta.
+Com intent "gathering", data.title pode conter o que já foi coletado, e os campos faltantes ficam null.
+
+Exemplo de fluxo:
+Usuário: "agenda uma reunião"
+→ {"reply":"Claro! Qual é o assunto da reunião?","intent":"gathering","data":{"title":null,"datetime":null,"location":null,"with_whom":null,"notes":null}}
+
+Usuário: "reunião de planejamento"
+→ {"reply":"Ótimo! Quando será e em que horário?","intent":"gathering","data":{"title":"Reunião de planejamento","datetime":null,"location":null,"with_whom":null,"notes":null}}
+
+Usuário: "sexta às 14h"
+→ {"reply":"Entendido! Onde vai acontecer?","intent":"gathering","data":{"title":"Reunião de planejamento","datetime":"2026-08-21T14:00:00","location":null,"with_whom":null,"notes":null}}
+
+Usuário: "na sala de reuniões"
+→ {"reply":"Quem vai participar?","intent":"gathering","data":{"title":"Reunião de planejamento","datetime":"2026-08-21T14:00:00","location":"Sala de reuniões","with_whom":null,"notes":null}}
+
+Usuário: "João e Maria"
+→ {"reply":"Perfeito! Reunião de planejamento na sexta às 14h na sala de reuniões com João e Maria. Agendado!","intent":"event","data":{"title":"Reunião de planejamento","datetime":"2026-08-21T14:00:00","location":"Sala de reuniões","with_whom":"João e Maria","notes":null}}
+
+Para "reminder" simples (ex: "me lembra de tomar remédio"), local e participantes não são obrigatórios — apenas título e horário.
+Para "alarm" (ex: "alarme às 7h"), apenas horário é obrigatório.
+
+=== OUTROS TIPOS ===
+- list: ver agenda
+- delete: apagar evento
+- question: pergunta geral
+- general: conversa, qualquer outra coisa
 
 Data e hora EXATA agora: ${now} (fuso America/Sao_Paulo).
-Use SEMPRE essa data para calcular datas relativas como hoje, amanhã, semana que vem.
-Se não houver data/hora explícita, datetime deve ser null.`
+Use SEMPRE essa data para calcular datas relativas (hoje, amanhã, semana que vem, etc).`
 }
 
 module.exports = async function handler(req, res) {

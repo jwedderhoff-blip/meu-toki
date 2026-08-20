@@ -1,7 +1,3 @@
-const Groq = require('groq-sdk')
-
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
 const SYSTEM = `Você é o Toki, um assistente pessoal em português brasileiro.
 Você recebe transcrições de voz do usuário e deve:
 1. Entender a intenção
@@ -48,21 +44,39 @@ module.exports = async function handler(req, res) {
   const { transcript, history = [] } = req.body || {}
   if (!transcript) return res.status(400).json({ error: 'transcript obrigatório' })
 
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY não configurada' })
+
   try {
     const messages = [
+      { role: 'system', content: SYSTEM },
       ...history.map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: transcript }
     ]
 
-    const response = await client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 512,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: SYSTEM }, ...messages]
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 512,
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+        messages
+      })
     })
 
-    const text = response.choices[0]?.message?.content || '{}'
+    if (!groqRes.ok) {
+      const err = await groqRes.text()
+      return res.status(502).json({ error: err })
+    }
+
+    const json = await groqRes.json()
+    const text = json.choices?.[0]?.message?.content || '{}'
+
     let parsed
     try {
       parsed = JSON.parse(text)

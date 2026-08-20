@@ -11,7 +11,6 @@ import {
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
-import { LoginScreen } from './components/LoginScreen'
 import styles from './App.module.css'
 
 const HAS_GCAL = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -50,19 +49,17 @@ export default function App() {
     } else {
       setUser(null)
       localStorage.removeItem('toki_user')
-      setEvents([])
+      const local = loadEvents()
+      setEvents(local)
     }
   }, [syncFromGoogle])
 
   useEffect(() => {
+    const evs = loadEvents()
+    setEvents(evs)
+    restoreScheduled(evs)
     requestPermission()
-    if (HAS_GCAL) {
-      initGoogleCalendar(handleConnectChange)
-    } else {
-      const evs = loadEvents()
-      setEvents(evs)
-      restoreScheduled(evs)
-    }
+    if (HAS_GCAL) initGoogleCalendar(handleConnectChange)
   }, [handleConnectChange])
 
   const addMsg = (role, content) => {
@@ -143,14 +140,6 @@ export default function App() {
     localStorage.removeItem('toki_events')
   }
 
-  // Mostra login se tem integração Google mas usuário não está logado
-  if (HAS_GCAL && !gcalConnected && !syncing) {
-    const savedToken = localStorage.getItem('gcal_token')
-    if (!savedToken) {
-      return <LoginScreen onLogin={connectGoogle} />
-    }
-  }
-
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -159,7 +148,15 @@ export default function App() {
           <span>Toki</span>
         </div>
         <div className={styles.headerRight}>
-          {syncing && <span className={styles.syncing}>⏳</span>}
+          {HAS_GCAL && (
+            <button
+              className={`${styles.gcalBtn} ${gcalConnected ? styles.gcalOn : ''}`}
+              onClick={() => gcalConnected ? disconnectGoogle() : connectGoogle()}
+              title={gcalConnected ? 'Google Agenda conectado — clique para desconectar' : 'Conectar Google Agenda'}
+            >
+              {syncing ? '⏳' : gcalConnected ? '📅 ✓' : '📅'}
+            </button>
+          )}
           {user && (
             <button
               className={styles.userBtn}

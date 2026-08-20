@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from './VoiceButton.module.css'
 
-export function VoiceButton({ listening, interim, onStart, onStop, onText, disabled }) {
+export function VoiceButton({ listening, interim, onStart, onStop, onText, disabled, continuous, onToggleContinuous }) {
   const rippleRef = useRef(null)
   const inputRef = useRef(null)
   const [text, setText] = useState('')
@@ -70,9 +70,22 @@ export function VoiceButton({ listening, interim, onStart, onStop, onText, disab
         )}
       </div>
 
-      <p className={styles.hint}>
-        {disabled ? 'Processando…' : listening ? 'Solte para enviar' : 'Segure o mic ou escreva'}
-      </p>
+      <div className={styles.bottomRow}>
+        <p className={styles.hint}>
+          {disabled ? 'Processando…' : listening ? 'Solte para enviar' : 'Segure o mic ou escreva'}
+        </p>
+        <button
+          className={`${styles.toggle} ${continuous ? styles.toggleOn : ''}`}
+          onClick={onToggleContinuous}
+          title={continuous ? 'Conversa contínua ativa' : 'Ativar conversa contínua'}
+          aria-label="Conversa contínua"
+        >
+          <span className={styles.toggleTrack}>
+            <span className={styles.toggleThumb} />
+          </span>
+          <span className={styles.toggleLabel}>Contínuo</span>
+        </button>
+      </div>
     </div>
   )
 }

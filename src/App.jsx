@@ -48,6 +48,8 @@ export default function App() {
   const [watches, setWatches] = useState(() => loadWatches())
   const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem('toki_wake') === '1')
   const [wakeListening, setWakeListening] = useState(false)
+  const [continuous, setContinuous] = useState(() => localStorage.getItem('toki_continuous') === '1')
+  const continuousRef = useRef(continuous)
   const menuRef = useRef(null)
 
   const syncFromGoogle = useCallback(async () => {
@@ -355,8 +357,20 @@ export default function App() {
       addMsg('assistant', 'Desculpe, ocorreu um erro. Tente novamente.')
     } finally {
       setLoading(false)
+      // Modo contínuo: reinicia microfone após resposta
+      if (continuousRef.current) {
+        setTimeout(() => { if (continuousRef.current) start() }, 800)
+      }
     }
-  }, [messages])
+  }, [messages, start])
+
+  useEffect(() => { continuousRef.current = continuous }, [continuous])
+
+  const toggleContinuous = () => {
+    const next = !continuous
+    setContinuous(next)
+    localStorage.setItem('toki_continuous', next ? '1' : '0')
+  }
 
   const handleError = useCallback((msg) => setError(msg), [])
   const { listening, interim, start, stop } = useSpeechRecognition({ onResult: handleResult, onError: handleError })
@@ -556,6 +570,8 @@ export default function App() {
             onStop={stop}
             onText={handleResult}
             disabled={loading}
+            continuous={continuous}
+            onToggleContinuous={toggleContinuous}
           />
         </div>
       )}

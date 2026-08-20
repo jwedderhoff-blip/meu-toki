@@ -11,7 +11,7 @@ function buildSystem() {
 REGRA ABSOLUTA: responda APENAS com um objeto JSON puro, sem texto antes ou depois, sem markdown, sem blocos de código.
 
 Formato obrigatório:
-{"reply":"[texto]","intent":"[tipo]","data":{"title":"[título]","datetime":"[2026-MM-DDTHH:mm:ss ou null]","location":"[local ou null]","with_whom":"[participantes ou null]","notes":"[obs ou null]"}}
+{"reply":"[texto]","intent":"[tipo]","data":{"title":"[título]","datetime":"[2026-MM-DDTHH:mm:ss ou null]","location":"[local ou null]","with_whom":"[participantes ou null]","notes":"[obs ou null]","duration_seconds":[número ou null],"items":[[lista de strings] ou null],"content":"[texto livre ou null]"}}
 
 === REGRAS PARA AGENDAMENTO (event / reminder / alarm) ===
 
@@ -43,9 +43,20 @@ Usuário: "João e Maria"
 Para "reminder" simples (ex: "me lembra de tomar remédio"), local e participantes não são obrigatórios — apenas título e horário.
 Para "alarm" (ex: "alarme às 7h"), apenas horário é obrigatório.
 
-=== OUTROS TIPOS ===
-- list: ver agenda
-- delete: apagar evento
+=== ALARMES E CRONÔMETROS (Android) ===
+- alarm: criar alarme no relógio do Android. Extraia hour e minute do datetime. Ex: "alarme às 7h" → datetime:"2026-08-19T07:00:00"
+- timer: cronômetro/temporizador. Preencha duration_seconds. Ex: "cronômetro de 5 minutos" → duration_seconds:300. "timer de 1h30" → duration_seconds:5400.
+  Para timer, title deve descrever o motivo ("Cozinhar macarrão", "Exercício", etc).
+
+=== NOTAS E LISTAS ===
+- note: anotação de texto livre. Preencha title e content. Ex: "anota que preciso ligar pro médico" → intent:"note", content:"Ligar para o médico"
+- shopping: lista de compras. Preencha title e items (array de strings). Ex: "lista de compras: leite, pão, ovos" → items:["Leite","Pão","Ovos"]
+- checklist: lista de tarefas/afazeres. Preencha title e items. Ex: "lista de tarefas para o projeto"
+
+=== CONSULTA ===
+- list: ver agenda de compromissos
+- list_notes: ver notas e listas salvas
+- delete: apagar compromisso ou nota (informe id se disponível)
 - question: pergunta geral
 - general: conversa, qualquer outra coisa
 

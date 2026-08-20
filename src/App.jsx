@@ -8,9 +8,12 @@ import {
   pushToGoogleCalendar, fetchFromGoogleCalendar, deleteFromGoogleCalendar,
   fetchUserProfile
 } from './services/googleCalendar'
+import { loadNotes, addNote, deleteNote } from './services/notes'
+import { openAndroidAlarm, openAndroidTimer, extractTime } from './services/android'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
+import { NoteList } from './components/NoteList'
 import { LoginScreen } from './components/LoginScreen'
 import styles from './App.module.css'
 
@@ -21,6 +24,7 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('toki_chat') || '[]') } catch { return [] }
   })
   const [events, setEvents] = useState([])
+  const [notes, setNotes] = useState(() => loadNotes())
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState('chat')
   const [error, setError] = useState(null)
@@ -52,15 +56,13 @@ export default function App() {
     } else {
       setUser(null)
       localStorage.removeItem('toki_user')
-      const local = loadEvents()
-      setEvents(local)
+      setEvents(loadEvents())
     }
   }, [syncFromGoogle])
 
   useEffect(() => {
-    const evs = loadEvents()
-    setEvents(evs)
-    restoreScheduled(evs)
+    setEvents(loadEvents())
+    restoreScheduled(loadEvents())
     requestPermission()
     if (HAS_GCAL) initGoogleCalendar(handleConnectChange)
   }, [handleConnectChange])
@@ -68,9 +70,7 @@ export default function App() {
   const addMsg = (role, content) => {
     const msg = { id: crypto.randomUUID(), role, content, ts: new Date().toISOString() }
     setMessages(prev => {
-      const updated = [...prev, msg]
-      // Mantém últimas 100 mensagens para não encher o storage
-      const trimmed = updated.slice(-100)
+      const trimmed = [...prev, msg].slice(-100)
       localStorage.setItem('toki_chat', JSON.stringify(trimmed))
       return trimmed
     })
@@ -87,34 +87,53 @@ export default function App() {
       const { reply, intent, data } = await sendToToki(transcript, history)
       addMsg('assistant', reply)
 
-      if (['reminder', 'event', 'alarm'].includes(intent) && data?.title) {
+      // Compromissos no Google Agenda
+      if (['reminder', 'event'].includes(intent) && data?.title) {
         const newEvent = addEvent({ type: intent, ...data })
         setEvents(loadEvents())
-
-        if (newEvent.datetime) {
-          scheduleNotification(newEvent.title, newEvent.notes || reply, newEvent.datetime)
-        }
-
+        if (newEvent.datetime) scheduleNotification(newEvent.title, data.notes || reply, newEvent.datetime)
         if (isGoogleConnected()) {
           const gcalId = await pushToGoogleCalendar(newEvent)
-          if (gcalId) {
-            updateEvent(newEvent.id, { gcalId })
-          }
+          if (gcalId) updateEvent(newEvent.id, { gcalId })
         }
+        setTab('events')
       }
 
+      // Alarme no Android
+      if (intent === 'alarm' && data?.datetime) {
+        const newEvent = addEvent({ type: 'alarm', ...data })
+        setEvents(loadEvents())
+        scheduleNotification(data.title, reply, data.datetime)
+        const time = extractTime(data.datetime)
+        if (time) openAndroidAlarm({ ...time, message: data.title })
+        setTab('events')
+      }
+
+      // Cronômetro no Android
+      if (intent === 'timer' && data?.duration_seconds) {
+        openAndroidTimer(data.duration_seconds, data.title)
+      }
+
+      // Notas e listas
+      if (['note', 'shopping', 'checklist'].includes(intent) && data?.title) {
+        const items = data.items?.map(text => ({
+          id: crypto.randomUUID(), text, done: false
+        }))
+        addNote({ type: intent, title: data.title, content: data.content || null, items: items || [] })
+        setNotes(loadNotes())
+        setTab('notes')
+      }
+
+      // Apagar
       if (intent === 'delete' && data?.id) {
         const evToDelete = loadEvents().find(e => e.id === data.id)
         deleteEvent(data.id)
-        if (evToDelete?.gcalId && isGoogleConnected()) {
-          deleteFromGoogleCalendar(evToDelete.gcalId)
-        }
+        if (evToDelete?.gcalId && isGoogleConnected()) deleteFromGoogleCalendar(evToDelete.gcalId)
         setEvents(loadEvents())
       }
 
-      if (['list', 'reminder', 'event', 'alarm'].includes(intent)) {
-        setTab('events')
-      }
+      if (intent === 'list_notes') setTab('notes')
+
     } catch (e) {
       setError(e.message)
       addMsg('assistant', 'Desculpe, ocorreu um erro. Tente novamente.')
@@ -131,12 +150,15 @@ export default function App() {
   })
 
   const handleDeleteEvent = async (id) => {
-    const evToDelete = events.find(e => e.id === id)
+    const ev = events.find(e => e.id === id)
     deleteEvent(id)
-    if (evToDelete?.gcalId && isGoogleConnected()) {
-      deleteFromGoogleCalendar(evToDelete.gcalId)
-    }
+    if (ev?.gcalId && isGoogleConnected()) deleteFromGoogleCalendar(ev.gcalId)
     setEvents(loadEvents())
+  }
+
+  const handleDeleteNote = (id) => {
+    deleteNote(id)
+    setNotes(loadNotes())
   }
 
   const handleLogout = () => {
@@ -147,7 +169,6 @@ export default function App() {
     localStorage.removeItem('toki_events')
   }
 
-  // Mostra login se Google está configurado mas não há token salvo
   if (HAS_GCAL && !gcalConnected && !syncing && !localStorage.getItem('gcal_token')) {
     return <LoginScreen onLogin={connectGoogle} />
   }
@@ -164,17 +185,13 @@ export default function App() {
             <button
               className={`${styles.gcalBtn} ${gcalConnected ? styles.gcalOn : ''}`}
               onClick={() => gcalConnected ? disconnectGoogle() : connectGoogle()}
-              title={gcalConnected ? 'Google Agenda conectado — clique para desconectar' : 'Conectar Google Agenda'}
+              title={gcalConnected ? 'Desconectar Google Agenda' : 'Conectar Google Agenda'}
             >
               {syncing ? '⏳' : gcalConnected ? '📅 ✓' : '📅'}
             </button>
           )}
           {user && (
-            <button
-              className={styles.userBtn}
-              onClick={handleLogout}
-              title={`${user.name} — clique para sair`}
-            >
+            <button className={styles.userBtn} onClick={handleLogout} title={`${user.name} — sair`}>
               {user.picture
                 ? <img src={user.picture} alt={user.name} className={styles.avatar} />
                 : <span className={styles.avatarFallback}>{user.name?.[0]}</span>
@@ -182,49 +199,40 @@ export default function App() {
             </button>
           )}
           <nav className={styles.nav}>
-            <button
-              className={`${styles.navBtn} ${tab === 'chat' ? styles.active : ''}`}
-              onClick={() => setTab('chat')}
-            >Chat</button>
-            <button
-              className={`${styles.navBtn} ${tab === 'events' ? styles.active : ''}`}
-              onClick={() => setTab('events')}
-            >
+            <button className={`${styles.navBtn} ${tab === 'chat' ? styles.active : ''}`} onClick={() => setTab('chat')}>Chat</button>
+            <button className={`${styles.navBtn} ${tab === 'events' ? styles.active : ''}`} onClick={() => setTab('events')}>
               Agenda
               {events.length > 0 && <span className={styles.badge}>{events.length}</span>}
+            </button>
+            <button className={`${styles.navBtn} ${tab === 'notes' ? styles.active : ''}`} onClick={() => setTab('notes')}>
+              Notas
+              {notes.length > 0 && <span className={styles.badge}>{notes.length}</span>}
             </button>
           </nav>
         </div>
       </header>
 
       <main className={styles.main}>
-        {tab === 'chat' ? (
-          <ChatHistory messages={messages} />
-        ) : (
+        {tab === 'chat' && <ChatHistory messages={messages} />}
+        {tab === 'events' && (
           <div className={styles.eventsScroll}>
             <EventList events={events} onDelete={handleDeleteEvent} />
-            {!events.length && (
-              <p className={styles.eventsEmpty}>Nenhum agendamento encontrado no Google Agenda.</p>
-            )}
+            {!events.length && <p className={styles.eventsEmpty}>Nenhum agendamento ainda.</p>}
+          </div>
+        )}
+        {tab === 'notes' && (
+          <div className={styles.eventsScroll}>
+            <NoteList notes={notes} onDelete={handleDeleteNote} onRefresh={() => setNotes(loadNotes())} />
+            {!notes.length && <p className={styles.eventsEmpty}>Nenhuma nota ainda. Peça ao Toki para criar uma lista ou anotação.</p>}
           </div>
         )}
       </main>
 
-      {error && (
-        <div className={styles.error} onClick={() => setError(null)}>
-          {error}
-        </div>
-      )}
+      {error && <div className={styles.error} onClick={() => setError(null)}>{error}</div>}
 
       {tab === 'chat' && (
         <footer className={styles.footer}>
-          <VoiceButton
-            listening={listening}
-            interim={interim}
-            onStart={start}
-            onStop={stop}
-            disabled={loading}
-          />
+          <VoiceButton listening={listening} interim={interim} onStart={start} onStop={stop} disabled={loading} />
         </footer>
       )}
     </div>

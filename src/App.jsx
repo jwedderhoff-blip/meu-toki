@@ -17,7 +17,9 @@ import styles from './App.module.css'
 const HAS_GCAL = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 export default function App() {
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('toki_chat') || '[]') } catch { return [] }
+  })
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState('chat')
@@ -65,7 +67,13 @@ export default function App() {
 
   const addMsg = (role, content) => {
     const msg = { id: crypto.randomUUID(), role, content, ts: new Date().toISOString() }
-    setMessages(prev => [...prev, msg])
+    setMessages(prev => {
+      const updated = [...prev, msg]
+      // Mantém últimas 100 mensagens para não encher o storage
+      const trimmed = updated.slice(-100)
+      localStorage.setItem('toki_chat', JSON.stringify(trimmed))
+      return trimmed
+    })
   }
 
   const handleResult = useCallback(async (transcript) => {
@@ -85,14 +93,12 @@ export default function App() {
 
         if (newEvent.datetime) {
           scheduleNotification(newEvent.title, newEvent.notes || reply, newEvent.datetime)
+        }
 
-          if (isGoogleConnected()) {
-            const gcalId = await pushToGoogleCalendar(newEvent)
-            if (gcalId) {
-              updateEvent(newEvent.id, { gcalId })
-            } else {
-              setError('Não foi possível adicionar ao Google Agenda.')
-            }
+        if (isGoogleConnected()) {
+          const gcalId = await pushToGoogleCalendar(newEvent)
+          if (gcalId) {
+            updateEvent(newEvent.id, { gcalId })
           }
         }
       }

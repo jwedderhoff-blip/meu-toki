@@ -180,21 +180,31 @@ export async function fetchFromGoogleCalendar() {
 export async function pushToGoogleCalendar(event) {
   if (!_token) return false
 
-  const startDt = new Date(event.datetime).toISOString()
-  const endDt = new Date(new Date(event.datetime).getTime() + 60 * 60 * 1000).toISOString()
-
   const descParts = [
     TOKI_TAG,
     event.notes,
     event.with_whom ? `Participantes: ${event.with_whom}` : null
   ].filter(Boolean)
 
+  // Com horário: evento com hora exata. Sem horário: evento de dia inteiro
+  let startField, endField
+  if (event.datetime) {
+    const startDt = new Date(event.datetime).toISOString()
+    const endDt = new Date(new Date(event.datetime).getTime() + 60 * 60 * 1000).toISOString()
+    startField = { dateTime: startDt, timeZone: 'America/Sao_Paulo' }
+    endField   = { dateTime: endDt,   timeZone: 'America/Sao_Paulo' }
+  } else {
+    const today = new Date().toISOString().split('T')[0]
+    startField = { date: today }
+    endField   = { date: today }
+  }
+
   const body = {
     summary: event.title,
     location: event.location || undefined,
     description: descParts.join('\n') || undefined,
-    start: { dateTime: startDt, timeZone: 'America/Sao_Paulo' },
-    end:   { dateTime: endDt,   timeZone: 'America/Sao_Paulo' }
+    start: startField,
+    end:   endField
   }
 
   const res = await gcalFetch(

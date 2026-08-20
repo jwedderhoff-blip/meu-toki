@@ -255,7 +255,14 @@ export default function App() {
 
       {tab === 'chat' && (
         <footer className={styles.footer}>
-          <VoiceButton listening={listening} interim={interim} onStart={start} onStop={stop} disabled={loading} />
+          <VoiceButton
+            listening={listening}
+            interim={interim}
+            onStart={start}
+            onStop={stop}
+            onText={handleResult}
+            disabled={loading}
+          />
         </footer>
       )}
     </div>

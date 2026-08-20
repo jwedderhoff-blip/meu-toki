@@ -96,22 +96,26 @@ export default function App() {
     try {
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
 
-      // Detecta pedido de resumo do dia
-      const summaryQuery = /resumo (do dia|de hoje)|como (está|tá) (meu dia|o dia)|o que (tenho|tem) (hoje|pra hoje)|meu dia|bom dia toki/i
+      // Detecta pedido de resumo do dia (hoje ou amanhã)
+      const summaryQuery = /r[eu]{1,2}mo|como (está|tá|esta) (meu dia|o dia)|o que (tenho|tem) (hoje|amanhã|pra (hoje|amanhã))|meu dia|bom dia/i
+      const summaryIsTomorrow = /amanhã/i.test(transcript)
       if (summaryQuery.test(transcript) && isGoogleConnected()) {
+        const period = summaryIsTomorrow ? 'tomorrow' : 'today'
         const [evs, emailResult] = await Promise.all([
-          fetchFromGoogleCalendar('today'),
+          fetchFromGoogleCalendar(period),
           fetchRecentEmails(20)
         ])
 
         const now = new Date()
         const greeting = now.getHours() < 12 ? 'Bom dia' : now.getHours() < 18 ? 'Boa tarde' : 'Boa noite'
-        const today = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
-        const parts = [`☀️ **${greeting}!** Hoje é ${today}.\n`]
+        const refDate = summaryIsTomorrow ? new Date(now.getTime() + 86400000) : now
+        const dayLabel = summaryIsTomorrow ? 'Amanhã' : 'Hoje'
+        const dateStr = refDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
+        const parts = [`☀️ **${greeting}!** ${dayLabel} é ${dateStr}.\n`]
 
         // Agenda
         if (!evs || evs.length === 0) {
-          parts.push('📅 **Agenda:** Dia livre, sem compromissos.')
+          parts.push(`📅 **Agenda:** ${dayLabel} está livre, sem compromissos.`)
         } else {
           const evLines = evs.map(e => {
             const dt = e.datetime
@@ -119,7 +123,7 @@ export default function App() {
               : 'dia todo'
             return `  • ${dt} — ${e.title}${e.location ? ` (${e.location})` : ''}`
           }).join('\n')
-          parts.push(`📅 **Agenda de hoje** (${evs.length} compromisso${evs.length > 1 ? 's' : ''}):\n${evLines}`)
+          parts.push(`📅 **Agenda de ${dayLabel.toLowerCase()}** (${evs.length} compromisso${evs.length > 1 ? 's' : ''}):\n${evLines}`)
         }
 
         // Emails

@@ -11,6 +11,7 @@ import {
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
+import { LoginScreen } from './components/LoginScreen'
 import styles from './App.module.css'
 
 const HAS_GCAL = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -138,6 +139,11 @@ export default function App() {
     setEvents([])
     localStorage.removeItem('toki_user')
     localStorage.removeItem('toki_events')
+  }
+
+  // Mostra login se Google está configurado mas não há token salvo
+  if (HAS_GCAL && !gcalConnected && !syncing && !localStorage.getItem('gcal_token')) {
+    return <LoginScreen onLogin={connectGoogle} />
   }
 
   return (

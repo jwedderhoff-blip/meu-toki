@@ -1,34 +1,20 @@
-const SYSTEM = `Você é o Toki, um assistente pessoal em português brasileiro.
-Você recebe transcrições de voz do usuário e deve:
-1. Entender a intenção
-2. Extrair dados estruturados quando relevante
-3. Responder de forma natural, direta e amigável
+const SYSTEM = `Você é o Toki, assistente pessoal em português brasileiro. /no_think
 
-Responda SEMPRE em JSON válido com este formato exato:
-{
-  "reply": "sua resposta em texto para o usuário",
-  "intent": "reminder|event|alarm|question|list|delete|general",
-  "data": {
-    "title": "título curto do evento/lembrete",
-    "datetime": "ISO 8601 datetime ou null",
-    "notes": "detalhes extras ou null"
-  }
-}
+REGRA ABSOLUTA: responda APENAS com um objeto JSON puro, sem texto antes ou depois, sem markdown, sem blocos de código.
 
-Regras para intent:
-- "reminder": lembrete pontual ("me lembra de...", "não esquece de...")
-- "event": compromisso agendado ("reunião às 14h", "consulta na sexta")
-- "alarm": alarme recorrente ou urgente ("todo dia às 7h", "alarme para 6h30")
-- "list": usuário quer ver seus compromissos/lembretes
-- "delete": usuário quer apagar algo
-- "question": pergunta sobre horários, datas, calendário
-- "general": qualquer outra coisa
+Formato obrigatório:
+{"reply":"resposta natural ao usuário","intent":"TIPO","data":{"title":"título ou null","datetime":"ISO8601 ou null","notes":"detalhe ou null"}}
 
-Para datas relativas use a data atual: ${new Date().toLocaleDateString('pt-BR')}.
-O fuso horário do usuário é America/Sao_Paulo.
-Se não houver data/hora explícita, datetime deve ser null.
-O campo "data" pode ser null se intent for "general" ou "question".
-Responda APENAS o JSON, sem markdown, sem blocos de código.`
+Tipos de intent:
+- reminder: lembrete ("me lembra de...", "não esquece de...")
+- event: compromisso agendado ("reunião às 14h", "consulta sexta")
+- alarm: alarme ("todo dia às 7h", "alarme para 6h30")
+- list: ver agenda/lembretes
+- delete: apagar algo
+- question: pergunta sobre datas/horários
+- general: qualquer outra coisa (data pode ser null)
+
+Data atual: ${new Date().toLocaleDateString('pt-BR')}. Fuso: America/Sao_Paulo.`
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -79,11 +65,21 @@ module.exports = async function handler(req, res) {
     // remove bloco <think>...</think> do Qwen
     text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
 
-    // extrai o primeiro objeto JSON encontrado no texto
+    // extrai o JSON mais externo do texto
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     let parsed
     try {
-      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text)
+      const raw = JSON.parse(jsonMatch ? jsonMatch[0] : text)
+      // se o modelo retornou só o data sem o wrapper, constrói a estrutura correta
+      if (!raw.reply && !raw.intent) {
+        parsed = {
+          reply: raw.title ? `Agendado: ${raw.title}` : 'Feito!',
+          intent: raw.datetime ? 'event' : 'general',
+          data: raw
+        }
+      } else {
+        parsed = raw
+      }
     } catch {
       parsed = { reply: text || 'Olá! Como posso te ajudar?', intent: 'general', data: null }
     }

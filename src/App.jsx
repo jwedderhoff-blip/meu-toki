@@ -96,6 +96,53 @@ export default function App() {
     try {
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
 
+      // Detecta pedido de resumo do dia
+      const summaryQuery = /resumo (do dia|de hoje)|como (está|tá) (meu dia|o dia)|o que (tenho|tem) (hoje|pra hoje)|meu dia|bom dia toki/i
+      if (summaryQuery.test(transcript) && isGoogleConnected()) {
+        const [evs, emailResult] = await Promise.all([
+          fetchFromGoogleCalendar('today'),
+          fetchRecentEmails(20)
+        ])
+
+        const now = new Date()
+        const greeting = now.getHours() < 12 ? 'Bom dia' : now.getHours() < 18 ? 'Boa tarde' : 'Boa noite'
+        const today = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
+        const parts = [`☀️ **${greeting}!** Hoje é ${today}.\n`]
+
+        // Agenda
+        if (!evs || evs.length === 0) {
+          parts.push('📅 **Agenda:** Dia livre, sem compromissos.')
+        } else {
+          const evLines = evs.map(e => {
+            const dt = e.datetime
+              ? new Date(e.datetime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+              : 'dia todo'
+            return `  • ${dt} — ${e.title}${e.location ? ` (${e.location})` : ''}`
+          }).join('\n')
+          parts.push(`📅 **Agenda de hoje** (${evs.length} compromisso${evs.length > 1 ? 's' : ''}):\n${evLines}`)
+        }
+
+        // Emails
+        if (Array.isArray(emailResult)) {
+          const unread = emailResult.filter(e => e.isUnread)
+          if (unread.length === 0) {
+            parts.push('✉️ **Emails:** Nenhum email não lido.')
+          } else {
+            const emailLines = unread.slice(0, 4).map(e => {
+              const from = e.from.replace(/<[^>]+>/, '').trim() || e.from
+              return `  • **${e.subject}** — ${from}`
+            }).join('\n')
+            const extra = unread.length > 4 ? `\n  _+ ${unread.length - 4} outros_` : ''
+            parts.push(`✉️ **Emails não lidos** (${unread.length}):\n${emailLines}${extra}`)
+          }
+          setEmails(emailResult)
+        }
+
+        addMsg('assistant', parts.join('\n\n'))
+        setLoading(false)
+        return
+      }
+
       // Detecta consultas de email e responde direto da Gmail API
       const emailQuery = /email|e-mail|inbox|caixa de entrada|mensagem.*recebi|recebi.*mensagem/i
       if (emailQuery.test(transcript) && isGoogleConnected()) {

@@ -1,16 +1,15 @@
-const synth = window.speechSynthesis
+function getSynth() {
+  return typeof window !== 'undefined' ? window.speechSynthesis : null
+}
 
-// Remove markdown antes de falar
 function cleanText(text) {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '$1')   // **negrito**
-    .replace(/\*(.*?)\*/g, '$1')        // *itálico*
-    .replace(/__(.*?)__/g, '$1')
-    .replace(/`[^`]+`/g, '')            // código inline
-    .replace(/#{1,6}\s/g, '')           // títulos
-    .replace(/!\[.*?\]\(.*?\)/g, '')    // imagens
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
-    .replace(/^[-*•]\s/gm, '')          // listas
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`[^`]+`/g, '')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^[-*•]\s/gm, '')
     .replace(/\n{2,}/g, '. ')
     .replace(/\n/g, ' ')
     .trim()
@@ -20,6 +19,8 @@ let _voice = null
 
 function getVoice() {
   if (_voice) return _voice
+  const synth = getSynth()
+  if (!synth) return null
   const voices = synth.getVoices()
   _voice =
     voices.find(v => v.lang === 'pt-BR' && v.localService) ||
@@ -29,13 +30,12 @@ function getVoice() {
   return _voice
 }
 
-// Fala o texto. Cancela fala anterior automaticamente.
 export function speak(text) {
+  const synth = getSynth()
   if (!synth) return
   synth.cancel()
   const clean = cleanText(text)
   if (!clean) return
-
   const utt = new SpeechSynthesisUtterance(clean)
   utt.lang = 'pt-BR'
   utt.rate = 1.05
@@ -46,15 +46,12 @@ export function speak(text) {
 }
 
 export function stopSpeaking() {
-  synth?.cancel()
+  getSynth()?.cancel()
 }
 
-export function isSpeaking() {
-  return synth?.speaking || false
-}
-
-// Carrega vozes (algumas plataformas carregam assíncronamente)
 export function loadVoices() {
+  const synth = getSynth()
+  if (!synth) return Promise.resolve([])
   return new Promise(resolve => {
     const voices = synth.getVoices()
     if (voices.length) { resolve(voices); return }

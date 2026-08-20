@@ -109,3 +109,27 @@
 .del:hover {
   color: var(--danger);
 }
+
+.actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.shareBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent2);
+  background: rgba(124, 106, 247, 0.1);
+  border: 1px solid rgba(124, 106, 247, 0.25);
+  border-radius: 6px;
+  padding: 4px 10px;
+  transition: background 0.15s;
+}
+
+.shareBtn:hover {
+  background: rgba(124, 106, 247, 0.2);
+}

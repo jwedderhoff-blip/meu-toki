@@ -38,6 +38,17 @@
   flex-shrink: 0;
 }
 
+.shareBtn {
+  background: none;
+  color: var(--accent2);
+  font-size: 15px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.shareBtn:hover { opacity: 0.7; }
+
 .deleteBtn {
   background: none;
   color: var(--text3);
@@ -47,9 +58,7 @@
   transition: color 0.15s;
 }
 
-.deleteBtn:hover {
-  color: var(--text);
-}
+.deleteBtn:hover { color: var(--text); }
 
 .body {
   padding: 0 14px 12px;

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toggleListItem, deleteNote } from '../services/notes'
+import { shareText, formatNoteForShare } from '../services/android'
 import styles from './NoteList.module.css'
 
 function NoteCard({ note, onDelete, onRefresh }) {
@@ -19,6 +20,7 @@ function NoteCard({ note, onDelete, onRefresh }) {
         <span className={styles.typeIcon}>{typeLabel}</span>
         <span className={styles.title}>{note.title}</span>
         <span className={styles.date}>{date}</span>
+        <button className={styles.shareBtn} onClick={e => { e.stopPropagation(); shareText(note.title, formatNoteForShare(note)) }} title="Compartilhar">↗</button>
         <button className={styles.deleteBtn} onClick={e => { e.stopPropagation(); onDelete(note.id) }}>✕</button>
       </div>
 

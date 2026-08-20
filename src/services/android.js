@@ -64,17 +64,57 @@ export async function requestWakeLock() {
   return null
 }
 
-// Compartilha texto via Web Share API (integra com WhatsApp, etc.)
+// Compartilha texto via Web Share API (abre WhatsApp, Telegram, etc.)
 export async function shareText(title, text) {
   if (navigator.share) {
     try {
       await navigator.share({ title, text })
-      return true
-    } catch { return false }
+      return 'shared'
+    } catch (e) {
+      if (e.name === 'AbortError') return 'cancelled'
+      // fallthrough para WhatsApp direto
+    }
   }
-  // Fallback: copia para área de transferência
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch { return false }
+  // Fallback: abre WhatsApp web/app diretamente
+  return openWhatsApp(text)
+}
+
+// Abre WhatsApp com texto pré-preenchido (número opcional)
+export function openWhatsApp(text, phone = '') {
+  const encoded = encodeURIComponent(text)
+  const url = phone
+    ? `https://wa.me/${phone.replace(/\D/g, '')}?text=${encoded}`
+    : `https://wa.me/?text=${encoded}`
+  window.open(url, '_blank')
+  return 'whatsapp'
+}
+
+// Formata um evento para compartilhar
+export function formatEventForShare(event) {
+  const lines = [`📅 *${event.title}*`]
+  if (event.datetime) {
+    const dt = new Date(event.datetime).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      dateStyle: 'full',
+      timeStyle: 'short'
+    })
+    lines.push(`🕐 ${dt}`)
+  }
+  if (event.location) lines.push(`📍 ${event.location}`)
+  if (event.with_whom) lines.push(`👤 ${event.with_whom}`)
+  if (event.notes) lines.push(`📝 ${event.notes}`)
+  lines.push('\n_Enviado pelo Toki_')
+  return lines.join('\n')
+}
+
+// Formata uma nota/lista para compartilhar
+export function formatNoteForShare(note) {
+  const lines = [`📝 *${note.title}*\n`]
+  if (note.items?.length) {
+    note.items.forEach(i => lines.push(`${i.done ? '✅' : '⬜'} ${i.text}`))
+  } else if (note.content) {
+    lines.push(note.content)
+  }
+  lines.push('\n_Enviado pelo Toki_')
+  return lines.join('\n')
 }

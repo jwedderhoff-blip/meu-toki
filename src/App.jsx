@@ -3,29 +3,33 @@ import { useSpeechRecognition } from './hooks/useSpeechRecognition'
 import { sendToToki } from './services/api'
 import { addEvent, deleteEvent, loadEvents } from './services/storage'
 import { requestPermission, scheduleNotification, restoreScheduled } from './services/notifications'
+import { initGoogleCalendar, connectGoogle, disconnectGoogle, isGoogleConnected, pushToGoogleCalendar } from './services/googleCalendar'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
 import styles from './App.module.css'
 
+const HAS_GCAL = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
+
 export default function App() {
   const [messages, setMessages] = useState([])
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState('chat') // 'chat' | 'events'
+  const [tab, setTab] = useState('chat')
   const [error, setError] = useState(null)
+  const [gcalConnected, setGcalConnected] = useState(false)
 
   useEffect(() => {
     const evs = loadEvents()
     setEvents(evs)
     restoreScheduled(evs)
     requestPermission()
+    if (HAS_GCAL) initGoogleCalendar(setGcalConnected)
   }, [])
 
   const addMsg = (role, content) => {
     const msg = { id: crypto.randomUUID(), role, content, ts: new Date().toISOString() }
     setMessages(prev => [...prev, msg])
-    return msg
   }
 
   const handleResult = useCallback(async (transcript) => {
@@ -42,8 +46,15 @@ export default function App() {
       if (['reminder', 'event', 'alarm'].includes(intent) && data?.title) {
         const newEvent = addEvent({ type: intent, ...data })
         setEvents(loadEvents())
+
         if (newEvent.datetime) {
           scheduleNotification(newEvent.title, newEvent.notes || reply, newEvent.datetime)
+
+          // envia automaticamente ao Google Calendar se conectado
+          if (isGoogleConnected()) {
+            const ok = await pushToGoogleCalendar(newEvent)
+            if (!ok) setError('Não foi possível adicionar ao Google Agenda. Reconecte.')
+          }
         }
       }
 
@@ -63,9 +74,7 @@ export default function App() {
     }
   }, [messages])
 
-  const handleError = useCallback((msg) => {
-    setError(msg)
-  }, [])
+  const handleError = useCallback((msg) => setError(msg), [])
 
   const { listening, interim, start, stop } = useSpeechRecognition({
     onResult: handleResult,
@@ -77,6 +86,8 @@ export default function App() {
     setEvents(loadEvents())
   }
 
+  const handleGcal = () => gcalConnected ? disconnectGoogle() : connectGoogle()
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -84,19 +95,30 @@ export default function App() {
           <span className={styles.logoIcon}>◎</span>
           <span>Toki</span>
         </div>
-        <nav className={styles.nav}>
-          <button
-            className={`${styles.navBtn} ${tab === 'chat' ? styles.active : ''}`}
-            onClick={() => setTab('chat')}
-          >Chat</button>
-          <button
-            className={`${styles.navBtn} ${tab === 'events' ? styles.active : ''}`}
-            onClick={() => setTab('events')}
-          >
-            Agenda
-            {events.length > 0 && <span className={styles.badge}>{events.length}</span>}
-          </button>
-        </nav>
+        <div className={styles.headerRight}>
+          {HAS_GCAL && (
+            <button
+              className={`${styles.gcalBtn} ${gcalConnected ? styles.gcalOn : ''}`}
+              onClick={handleGcal}
+              title={gcalConnected ? 'Google Agenda conectado — clique para desconectar' : 'Conectar Google Agenda'}
+            >
+              {gcalConnected ? '📅 ✓' : '📅'}
+            </button>
+          )}
+          <nav className={styles.nav}>
+            <button
+              className={`${styles.navBtn} ${tab === 'chat' ? styles.active : ''}`}
+              onClick={() => setTab('chat')}
+            >Chat</button>
+            <button
+              className={`${styles.navBtn} ${tab === 'events' ? styles.active : ''}`}
+              onClick={() => setTab('events')}
+            >
+              Agenda
+              {events.length > 0 && <span className={styles.badge}>{events.length}</span>}
+            </button>
+          </nav>
+        </div>
       </header>
 
       <main className={styles.main}>

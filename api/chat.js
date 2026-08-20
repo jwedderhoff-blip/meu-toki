@@ -54,6 +54,13 @@ Para "alarm" (ex: "alarme às 7h"), apenas horário é obrigatório.
 - shopping: lista de compras. Preencha title e items (array de strings com cada item). Ex: "lista de compras: leite, pão, ovos" → title:"Lista de compras", items:["Leite","Pão","Ovos"]
 - checklist: lista de tarefas/afazeres. Preencha title e items. Ex: "cria checklist do projeto" → items com cada tarefa separada.
 
+=== EMAIL (Gmail) ===
+- read_emails: ler emails recentes da caixa de entrada. Ex: "quais meus emails", "tem email novo?"
+- send_email: compor e enviar email. SEMPRE preencha: data.to (destinatário), data.subject (assunto), data.body (corpo do email).
+  IMPORTANTE: antes de usar intent "send_email", confirme os dados com o usuário na reply. Ex: "Vou enviar email para João (joao@email.com) com assunto 'Reunião'. Confirma?"
+  Só use send_email quando o usuário confirmar explicitamente.
+  Se faltar destinatário ou assunto, use intent "gathering" e pergunte.
+
 === CONSULTA DE AGENDA ===
 - list: consultar agenda. Preencha data.period com: "today", "tomorrow", "week", "month" ou "all".
   Exemplos: "qual minha agenda de hoje" → period:"today" | "o que tenho amanhã" → period:"tomorrow"

@@ -1,6 +1,8 @@
 const SCOPE = [
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/tasks',
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email'
 ].join(' ')
@@ -17,8 +19,8 @@ function saveToken(token) {
     token,
     expiry: Date.now() + 55 * 60 * 1000
   }))
-  // Compartilha token com Google Tasks
   import('./googleTasks.js').then(m => m.setTasksToken(token))
+  import('./gmail.js').then(m => m.setGmailToken(token))
 }
 
 function clearToken() {
@@ -72,6 +74,7 @@ export function initGoogleCalendar(onConnectChange) {
         if (expiry && Date.now() < expiry) {
           _token = token
           import('./googleTasks.js').then(m => m.setTasksToken(token))
+          import('./gmail.js').then(m => m.setGmailToken(token))
           onConnectChange(true)
         } else {
           localStorage.removeItem('gcal_token')

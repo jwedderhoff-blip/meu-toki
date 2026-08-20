@@ -238,3 +238,78 @@
   color: var(--text3);
   padding: 4px 0 0;
 }
+
+/* ── EMAIL MODAL ── */
+.emailModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+}
+
+.emailModalCard {
+  background: var(--bg2);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emailModalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.emailModalField {
+  font-size: 14px;
+  color: var(--text2);
+  padding: 8px 12px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+}
+
+.emailModalBody {
+  font-size: 14px;
+  color: var(--text2);
+  padding: 10px 12px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.emailModalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.emailCancel {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  color: var(--text2);
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.emailSend {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+}

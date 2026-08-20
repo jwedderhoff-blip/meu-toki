@@ -11,10 +11,12 @@ import {
 import { loadNotes, addNote, deleteNote } from './services/notes'
 import { openAndroidAlarm, openAndroidTimer, extractTime, isAndroid, formatDuration } from './services/android'
 import { addGoogleTask, addGoogleTaskList } from './services/googleTasks'
+import { fetchRecentEmails, sendEmail } from './services/gmail'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
 import { NoteList } from './components/NoteList'
+import { EmailList } from './components/EmailList'
 import { LoginScreen } from './components/LoginScreen'
 import styles from './App.module.css'
 
@@ -26,10 +28,13 @@ export default function App() {
   })
   const [events, setEvents] = useState([])
   const [notes, setNotes] = useState(() => loadNotes())
+  const [emails, setEmails] = useState([])
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState(null)
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState(() => {
     const p = new URLSearchParams(window.location.search).get('tab')
-    return ['chat', 'events', 'notes'].includes(p) ? p : 'chat'
+    return ['chat', 'events', 'notes', 'email'].includes(p) ? p : 'chat'
   })
   const [error, setError] = useState(null)
   const [gcalConnected, setGcalConnected] = useState(false)
@@ -176,6 +181,16 @@ export default function App() {
 
       if (intent === 'list_notes') setTab('notes')
 
+      // Email
+      if (intent === 'read_emails') {
+        setTab('email')
+        loadEmails()
+      }
+
+      if (intent === 'send_email' && data?.to && data?.subject && data?.body) {
+        setPendingEmail({ to: data.to, subject: data.subject, body: data.body })
+      }
+
     } catch (e) {
       setError(e.message)
       addMsg('assistant', 'Desculpe, ocorreu um erro. Tente novamente.')
@@ -195,6 +210,27 @@ export default function App() {
   }
 
   const handleDeleteNote = (id) => { deleteNote(id); setNotes(loadNotes()) }
+
+  const loadEmails = useCallback(async () => {
+    if (!isGoogleConnected()) return
+    setEmailLoading(true)
+    const result = await fetchRecentEmails(10)
+    setEmailLoading(false)
+    if (result) setEmails(result)
+  }, [])
+
+  // Carrega emails ao abrir a aba
+  useEffect(() => {
+    if (tab === 'email') loadEmails()
+  }, [tab, loadEmails])
+
+  const handleConfirmEmail = async () => {
+    if (!pendingEmail) return
+    const ok = await sendEmail(pendingEmail)
+    addMsg('assistant', ok ? `✅ Email enviado para ${pendingEmail.to}.` : '❌ Não foi possível enviar o email.')
+    setPendingEmail(null)
+    setTab('chat')
+  }
 
   const handleLogout = () => {
     disconnectGoogle()
@@ -274,9 +310,33 @@ export default function App() {
             {!notes.length && <p className={styles.empty}>Nenhuma nota ainda.<br/>Peça ao Toki para criar uma lista ou anotação.</p>}
           </div>
         )}
+        {tab === 'email' && (
+          <div className={styles.scroll}>
+            {emailLoading
+              ? <p className={styles.empty}>Carregando emails…</p>
+              : <EmailList emails={emails} />
+            }
+          </div>
+        )}
       </main>
 
       {error && <div className={styles.error} onClick={() => setError(null)}>{error}</div>}
+
+      {/* Modal de confirmação de envio de email */}
+      {pendingEmail && (
+        <div className={styles.emailModal}>
+          <div className={styles.emailModalCard}>
+            <h3 className={styles.emailModalTitle}>Confirmar envio</h3>
+            <div className={styles.emailModalField}><b>Para:</b> {pendingEmail.to}</div>
+            <div className={styles.emailModalField}><b>Assunto:</b> {pendingEmail.subject}</div>
+            <div className={styles.emailModalBody}>{pendingEmail.body}</div>
+            <div className={styles.emailModalActions}>
+              <button className={styles.emailCancel} onClick={() => setPendingEmail(null)}>Cancelar</button>
+              <button className={styles.emailSend} onClick={handleConfirmEmail}>Enviar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── INPUT DE VOZ/TEXTO (só no chat) ── */}
       {tab === 'chat' && (
@@ -307,6 +367,13 @@ export default function App() {
           <span className={styles.navIcon}>📝</span>
           Notas
           {notes.length > 0 && <span className={styles.navBadge}>{notes.length}</span>}
+        </button>
+        <button className={`${styles.navTab} ${tab === 'email' ? styles.active : ''}`} onClick={() => setTab('email')}>
+          <span className={styles.navIcon}>✉️</span>
+          Email
+          {emails.filter(e => e.isUnread).length > 0 && (
+            <span className={styles.navBadge}>{emails.filter(e => e.isUnread).length}</span>
+          )}
         </button>
       </nav>
 

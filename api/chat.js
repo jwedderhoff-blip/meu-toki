@@ -1,9 +1,17 @@
-const SYSTEM = `Você é o Toki, assistente pessoal em português brasileiro. /no_think
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+function buildSystem() {
+  const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+  return `Você é o Toki, assistente pessoal em português brasileiro. /no_think
 
 REGRA ABSOLUTA: responda APENAS com um objeto JSON puro, sem texto antes ou depois, sem markdown, sem blocos de código.
 
 Formato obrigatório:
-{"reply":"resposta natural ao usuário","intent":"TIPO","data":{"title":"título ou null","datetime":"ISO8601 ou null","notes":"detalhe ou null"}}
+{"reply":"resposta natural ao usuário","intent":"TIPO","data":{"title":"título ou null","datetime":"ISO8601 sem timezone ou null","notes":"detalhe ou null"}}
 
 Tipos de intent:
 - reminder: lembrete ("me lembra de...", "não esquece de...")
@@ -14,12 +22,9 @@ Tipos de intent:
 - question: pergunta sobre datas/horários
 - general: qualquer outra coisa (data pode ser null)
 
-Data atual: ${new Date().toLocaleDateString('pt-BR')}. Fuso: America/Sao_Paulo.`
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+Data e hora EXATA agora: ${now} (fuso America/Sao_Paulo).
+Use SEMPRE essa data para calcular datas relativas como hoje, amanhã, semana que vem.
+Se não houver data/hora explícita, datetime deve ser null.`
 }
 
 module.exports = async function handler(req, res) {
@@ -35,7 +40,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const messages = [
-      { role: 'system', content: SYSTEM },
+      { role: 'system', content: buildSystem() },
       ...history.map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: transcript }
     ]
@@ -70,7 +75,6 @@ module.exports = async function handler(req, res) {
     let parsed
     try {
       const raw = JSON.parse(jsonMatch ? jsonMatch[0] : text)
-      // se o modelo retornou só o data sem o wrapper, constrói a estrutura correta
       if (!raw.reply && !raw.intent) {
         parsed = {
           reply: raw.title ? `Agendado: ${raw.title}` : 'Feito!',

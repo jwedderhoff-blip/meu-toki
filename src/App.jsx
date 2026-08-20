@@ -52,7 +52,7 @@ export default function App() {
         setEvents(loadEvents())
       }
 
-      if (intent === 'list') {
+      if (['list', 'reminder', 'event', 'alarm'].includes(intent)) {
         setTab('events')
       }
     } catch (e) {

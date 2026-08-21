@@ -2,8 +2,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 480px;
-  margin: 0 auto;
+  background: var(--bg);
   position: relative;
 }
 
@@ -74,7 +73,6 @@
   border: 1px solid rgba(16,185,129,0.3);
 }
 
-/* Avatar → abre menu */
 .avatarBtn {
   width: 38px;
   height: 38px;
@@ -84,7 +82,6 @@
   flex-shrink: 0;
   transition: border-color 0.15s;
 }
-
 .avatarBtn:hover { border-color: var(--accent); }
 
 .avatar {
@@ -132,17 +129,8 @@
   border-bottom: 1px solid var(--bg3);
 }
 
-.menuName {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.menuEmail {
-  font-size: 12px;
-  color: var(--text3);
-  margin-top: 2px;
-}
+.menuName  { font-size: 14px; font-weight: 600; color: var(--text); }
+.menuEmail { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
 .menuItem {
   width: 100%;
@@ -156,9 +144,7 @@
   transition: background 0.1s;
   background: none;
 }
-
 .menuItem:hover { background: var(--bg3); color: var(--text); }
-
 .menuItem.danger { color: #fca5a5; }
 .menuItem.danger:hover { background: rgba(239,68,68,0.1); }
 
@@ -206,7 +192,22 @@
   flex-shrink: 0;
 }
 
-/* ── BOTTOM NAV ── */
+/* ── INPUT AREA ── */
+.inputArea {
+  flex-shrink: 0;
+  border-top: 1px solid var(--bg3);
+  background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.syncing {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text3);
+  padding: 4px 0 0;
+}
+
+/* ── BOTTOM NAV (mobile) ── */
 .bottomNav {
   flex-shrink: 0;
   display: flex;
@@ -214,6 +215,19 @@
   border-top: 1px solid var(--bg3);
   background: var(--bg);
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Cabeçalho do sidebar — oculto no mobile */
+.sidebarTop {
+  display: none;
+}
+
+.sidebarLogoIcon { font-size: 26px; }
+.sidebarLogoText {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .navTab {
@@ -229,8 +243,8 @@
   background: none;
   position: relative;
   transition: color 0.15s;
+  min-height: 56px; /* touch target */
 }
-
 .navTab.active { color: var(--accent2); }
 
 .navIcon {
@@ -253,21 +267,6 @@
   align-items: center;
   justify-content: center;
   padding: 0 3px;
-}
-
-/* ── INPUT AREA (chat) ── */
-.inputArea {
-  flex-shrink: 0;
-  border-top: 1px solid var(--bg3);
-  background: var(--bg);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-
-.syncing {
-  text-align: center;
-  font-size: 12px;
-  color: var(--text3);
-  padding: 4px 0 0;
 }
 
 /* ── EMAIL MODAL ── */
@@ -293,54 +292,142 @@
   gap: 12px;
 }
 
-.emailModalTitle {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-}
+.emailModalTitle { font-size: 16px; font-weight: 700; color: var(--text); }
 
 .emailModalField {
-  font-size: 14px;
-  color: var(--text2);
-  padding: 8px 12px;
-  background: var(--bg3);
-  border-radius: var(--radius-sm);
+  font-size: 14px; color: var(--text2);
+  padding: 8px 12px; background: var(--bg3); border-radius: var(--radius-sm);
 }
 
 .emailModalBody {
-  font-size: 14px;
-  color: var(--text2);
-  padding: 10px 12px;
-  background: var(--bg3);
-  border-radius: var(--radius-sm);
-  max-height: 150px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  line-height: 1.5;
+  font-size: 14px; color: var(--text2);
+  padding: 10px 12px; background: var(--bg3); border-radius: var(--radius-sm);
+  max-height: 150px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5;
 }
 
-.emailModalActions {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
+.emailModalActions { display: flex; gap: 10px; margin-top: 4px; }
 
 .emailCancel {
-  flex: 1;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  background: var(--bg3);
-  color: var(--text2);
-  font-weight: 500;
-  font-size: 15px;
+  flex: 1; padding: 12px; border-radius: var(--radius-sm);
+  background: var(--bg3); color: var(--text2); font-weight: 500; font-size: 15px;
 }
 
 .emailSend {
-  flex: 1;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
-  font-size: 15px;
+  flex: 1; padding: 12px; border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff; font-weight: 600; font-size: 15px;
+}
+
+/* ══════════════════════════════════════════
+   DESKTOP (≥ 768px) — layout em grade com sidebar
+   ══════════════════════════════════════════ */
+@media (min-width: 768px) {
+  .app {
+    display: grid;
+    grid-template-areas:
+      "sidebar header"
+      "sidebar main"
+      "sidebar input";
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: auto 1fr auto;
+    max-width: 1060px;
+    height: 100%;
+    margin: 0 auto;
+    border-left: 1px solid var(--bg3);
+    border-right: 1px solid var(--bg3);
+    box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  }
+
+  /* ── Header ── */
+  .header {
+    grid-area: header;
+    border-left: 1px solid var(--bg3);
+    padding: 12px 20px;
+  }
+
+  /* Logo fica no sidebar; esconde do header */
+  .logo { display: none; }
+
+  /* Badges e avatar ficam à direita */
+  .headerRight { margin-left: auto; }
+
+  /* ── Conteúdo ── */
+  .main {
+    grid-area: main;
+    border-left: 1px solid var(--bg3);
+  }
+
+  .inputArea {
+    grid-area: input;
+    border-left: 1px solid var(--bg3);
+  }
+
+  /* ── Sidebar nav ── */
+  .bottomNav {
+    grid-area: sidebar;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    border-top: none;
+    border-right: 1px solid var(--bg3);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Logo do sidebar — visível no desktop */
+  .sidebarTop {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--bg3);
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Tabs em coluna */
+  .navTab {
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    min-height: 44px;
+    border-radius: 10px;
+    margin: 2px 8px;
+    width: auto;
+    gap: 12px;
+  }
+
+  .navTab.active {
+    background: rgba(124, 106, 247, 0.12);
+  }
+
+  .navIcon { font-size: 18px; }
+
+  /* Badge na lateral */
+  .navBadge {
+    position: static;
+    margin-left: auto;
+    top: auto;
+    right: auto;
+  }
+
+  /* Modal de email centralizado */
+  .emailModal { align-items: center; }
+  .emailModalCard {
+    border-radius: var(--radius);
+    max-width: 520px;
+  }
+}
+
+/* ══════════════════════════════════════════
+   TABLET (768–1024px) — ligeiros ajustes
+   ══════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .app {
+    grid-template-columns: 200px 1fr;
+  }
+  .navTab { font-size: 13px; }
 }

@@ -21,16 +21,16 @@
 }
 
 .examples {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text3);
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 .msg {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 85%;
+  max-width: 88%;
   animation: fadeIn 0.2s ease;
 }
 
@@ -39,15 +39,8 @@
   to   { opacity: 1; transform: none; }
 }
 
-.user {
-  align-self: flex-end;
-  align-items: flex-end;
-}
-
-.assistant {
-  align-self: flex-start;
-  align-items: flex-start;
-}
+.user      { align-self: flex-end;   align-items: flex-end; }
+.assistant { align-self: flex-start; align-items: flex-start; }
 
 .label {
   font-size: 11px;
@@ -61,9 +54,10 @@
 .text {
   padding: 12px 16px;
   border-radius: var(--radius-sm);
-  font-size: 15px;
+  font-size: var(--font-msg, 16px);
   line-height: 1.6;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .user .text {
@@ -82,4 +76,12 @@
   font-size: 11px;
   color: var(--text3);
   padding-right: 4px;
+}
+
+/* Desktop: bolhas mais estreitas pois a área é mais larga */
+@media (min-width: 768px) {
+  .list { padding: 20px 24px 12px; gap: 14px; }
+  .msg  { max-width: 72%; }
+  .text { font-size: 15px; }
+  .examples { font-size: 14px; }
 }

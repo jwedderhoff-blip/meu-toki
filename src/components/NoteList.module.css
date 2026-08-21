@@ -213,3 +213,21 @@
   line-height: 1.5;
   white-space: pre-wrap;
 }
+
+/* ── Desktop ── */
+@media (min-width: 768px) {
+  .list {
+    padding: 12px 24px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  /* Search bar ocupa as 2 colunas */
+  .searchWrap { grid-column: 1 / -1; }
+
+  .title   { font-size: 15px; }
+  .content { font-size: 15px; }
+  .item    { font-size: 15px; }
+}

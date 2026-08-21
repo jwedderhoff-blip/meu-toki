@@ -551,8 +551,13 @@ export default function App() {
         </div>
       )}
 
-      {/* ── BOTTOM NAV ── */}
+      {/* ── BOTTOM NAV / SIDEBAR ── */}
       <nav className={styles.bottomNav}>
+        {/* Logo — visível apenas no sidebar desktop */}
+        <div className={styles.sidebarTop}>
+          <span className={styles.sidebarLogoIcon}>🪄</span>
+          <span className={styles.sidebarLogoText}>Toki</span>
+        </div>
         <button className={`${styles.navTab} ${tab === 'chat' ? styles.active : ''}`} onClick={() => setTab('chat')}>
           <span className={styles.navIcon}>💬</span>
           Chat

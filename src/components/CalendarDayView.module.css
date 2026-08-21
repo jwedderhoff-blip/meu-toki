@@ -195,3 +195,19 @@
   color: var(--text3);
   font-size: 13px;
 }
+
+/* ── Desktop ── */
+@media (min-width: 768px) {
+  .timeline {
+    margin-left: 56px;
+    margin-right: 24px;
+  }
+
+  .hourLabel { font-size: 11px; }
+
+  .evTitle  { font-size: 14px; }
+  .evTime   { font-size: 11px; }
+
+  .dayNum   { font-size: 17px; }
+  .header   { padding: 14px 20px; }
+}

@@ -64,3 +64,10 @@
   margin: 8px 0 0;
   line-height: 1.5;
 }
+
+@media (min-width: 768px) {
+  .card  { max-width: 380px; }
+  .title { font-size: 36px; }
+  .sub   { font-size: 16px; }
+  .googleBtn { font-size: 16px; padding: 14px 28px; }
+}

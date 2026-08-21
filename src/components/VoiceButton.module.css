@@ -127,3 +127,25 @@
   color: var(--text3);
   letter-spacing: 0.01em;
 }
+
+/* ── Desktop ── */
+@media (min-width: 768px) {
+  .wrap {
+    padding: 12px 28px 16px;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .textInput { font-size: 15px; }
+
+  .btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  .sendBtn {
+    width: 56px;
+    height: 56px;
+  }
+}

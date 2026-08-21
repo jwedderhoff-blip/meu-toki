@@ -17,6 +17,7 @@ import { fetchWeather, formatWeather } from './services/weather'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
+import { CalendarDayView } from './components/CalendarDayView'
 import { NoteList } from './components/NoteList'
 import { EmailList } from './components/EmailList'
 import { LoginScreen } from './components/LoginScreen'
@@ -238,6 +239,15 @@ export default function App() {
           const header = unread > 0 ? `Você tem **${unread} não lido${unread > 1 ? 's' : ''}** de ${result.length} emails recentes:` : `Seus ${result.length} emails mais recentes:`
           addMsg('assistant', `${header}\n\n${lines}`)
         }
+        setLoading(false)
+        return
+      }
+
+      // Abre visualização de calendário
+      const calendarQuery = /calendário|calend[aá]rio|abrir (agenda|calend)|ver (agenda|calend)|mostrar (agenda|calend)/i
+      if (calendarQuery.test(transcript)) {
+        setTab('events')
+        addMsg('assistant', 'Aqui está sua agenda de hoje. Use as setas para navegar entre os dias.')
         setLoading(false)
         return
       }
@@ -475,9 +485,13 @@ export default function App() {
       <main className={styles.main}>
         {tab === 'chat' && <ChatHistory messages={messages} />}
         {tab === 'events' && (
-          <div className={styles.scroll}>
-            <EventList events={events} onDelete={handleDeleteEvent} />
-            {!events.length && <p className={styles.empty}>Nenhum compromisso ainda.<br/>Peça ao Toki para agendar algo.</p>}
+          <div className={styles.calWrap}>
+            <CalendarDayView connected={isGoogleConnected()} />
+            {events.some(e => e.type !== 'event') && (
+              <div className={styles.scroll} style={{ flexShrink: 0 }}>
+                <EventList events={events.filter(e => e.type !== 'event')} onDelete={handleDeleteEvent} />
+              </div>
+            )}
           </div>
         )}
         {tab === 'notes' && (

@@ -204,6 +204,33 @@ export async function fetchFromGoogleCalendar(period = 'all') {
   })
 }
 
+// Busca eventos do Google Agenda para uma data específica (ISO yyyy-mm-dd)
+export async function fetchCalendarForDate(isoDate) {
+  if (!_token) return null
+  const [y, m, d] = isoDate.split('-').map(Number)
+  const timeMin = new Date(y, m - 1, d, 0, 0, 0).toISOString()
+  const timeMax = new Date(y, m - 1, d, 23, 59, 59).toISOString()
+
+  const params = new URLSearchParams({
+    timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '50'
+  })
+
+  const res = await gcalFetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`
+  )
+  if (!res || !res.ok) return null
+  const data = await res.json()
+
+  return (data.items || []).map(item => ({
+    id: item.id,
+    title: item.summary || '(sem título)',
+    datetime: item.start?.dateTime || item.start?.date || null,
+    endDatetime: item.end?.dateTime || item.end?.date || null,
+    location: item.location || '',
+    type: 'event',
+  }))
+}
+
 export async function pushToGoogleCalendar(event) {
   if (!_token) return false
 

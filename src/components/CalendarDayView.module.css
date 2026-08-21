@@ -1,0 +1,197 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bg3);
+  flex-shrink: 0;
+}
+
+.nav {
+  background: var(--bg3);
+  color: var(--text);
+  font-size: 20px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.nav:hover { background: var(--bg2); }
+
+.dateInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.weekday {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.dayNum {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.dayNum.today { color: var(--accent); }
+
+.todayBtn {
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* ── ALL-DAY STRIP ── */
+.allDayBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--bg3);
+  flex-shrink: 0;
+}
+
+.allDayChip {
+  background: var(--accent2, var(--accent));
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+/* ── SCROLL AREA ── */
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.empty {
+  text-align: center;
+  color: var(--text3);
+  font-size: 14px;
+  padding: 48px 16px;
+}
+
+/* ── TIMELINE ── */
+.timeline {
+  position: relative;
+  margin-left: 44px;
+  margin-right: 12px;
+}
+
+.hourRow {
+  position: absolute;
+  left: -40px;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.hourLabel {
+  font-size: 10px;
+  color: var(--text3);
+  width: 34px;
+  text-align: right;
+  padding-right: 6px;
+  margin-top: -7px;
+  flex-shrink: 0;
+}
+
+.hourLine {
+  flex: 1;
+  height: 1px;
+  background: var(--bg3);
+}
+
+/* ── CURRENT TIME ── */
+.nowLine {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  height: 2px;
+  background: #e53935;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.nowDot {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  background: #e53935;
+  border-radius: 50%;
+}
+
+/* ── EVENT BLOCK ── */
+.event {
+  position: absolute;
+  left: 4px;
+  right: 0;
+  background: var(--accent);
+  border-radius: 7px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.evTime {
+  font-size: 10px;
+  color: rgba(255,255,255,0.75);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.evTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evLoc {
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noEvents {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+}

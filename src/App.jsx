@@ -14,7 +14,6 @@ import { openAndroidAlarm, openAndroidTimer, extractTime, isAndroid, formatDurat
 import { addGoogleTask, addGoogleTaskList } from './services/googleTasks'
 import { fetchRecentEmails, sendEmail } from './services/gmail'
 import { loadWatches, addWatch, removeWatch, getLastEmailId, setLastEmailId, matchWatches } from './services/emailWatch'
-import { speak, stopSpeaking, loadVoices, getAvailableVoices, setVoice } from './services/tts'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
@@ -49,10 +48,6 @@ export default function App() {
   const [watches, setWatches] = useState(() => loadWatches())
   const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem('toki_wake') === '1')
   const [wakeListening, setWakeListening] = useState(false)
-  const [continuous, setContinuous] = useState(() => localStorage.getItem('toki_continuous') === '1')
-  const continuousRef = useRef(continuous)
-  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('toki_tts') === '1')
-  const ttsRef = useRef(ttsEnabled)
   const startRef = useRef(null)
   const menuRef = useRef(null)
 
@@ -137,12 +132,10 @@ export default function App() {
       localStorage.setItem('toki_chat', JSON.stringify(trimmed))
       return trimmed
     })
-    if (role === 'assistant' && ttsRef.current) speak(content, { rate: parseFloat(localStorage.getItem('toki_tts_rate') || '1.0') })
   }
 
   const handleResult = useCallback(async (transcript) => {
     if (!transcript) return
-    stopSpeaking() // para voz anterior ao receber novo comando
     addMsg('user', transcript)
     setLoading(true)
     setError(null)
@@ -363,36 +356,8 @@ export default function App() {
       addMsg('assistant', 'Desculpe, ocorreu um erro. Tente novamente.')
     } finally {
       setLoading(false)
-      // Modo contínuo: reinicia microfone após resposta
-      if (continuousRef.current) {
-        setTimeout(() => { if (continuousRef.current) startRef.current?.() }, 800)
-      }
     }
   }, [messages])
-
-  useEffect(() => { continuousRef.current = continuous }, [continuous])
-  useEffect(() => { ttsRef.current = ttsEnabled }, [ttsEnabled])
-
-  const [ttsVoices, setTtsVoices] = useState([])
-  const [ttsRate, setTtsRate] = useState(() => parseFloat(localStorage.getItem('toki_tts_rate') || '1.0'))
-
-  // Pré-carrega vozes na inicialização
-  useEffect(() => {
-    loadVoices().then(() => setTtsVoices(getAvailableVoices()))
-  }, [])
-
-  const toggleTts = () => {
-    const next = !ttsEnabled
-    setTtsEnabled(next)
-    localStorage.setItem('toki_tts', next ? '1' : '0')
-    if (!next) stopSpeaking()
-  }
-
-  const toggleContinuous = () => {
-    const next = !continuous
-    setContinuous(next)
-    localStorage.setItem('toki_continuous', next ? '1' : '0')
-  }
 
   const handleError = useCallback((msg) => setError(msg), [])
   const { listening, interim, start, stop } = useSpeechRecognition({ onResult: handleResult, onError: handleError })
@@ -513,29 +478,6 @@ export default function App() {
                 <div className={styles.menuEmail}>{user.email}</div>
               </div>
             )}
-            <button className={styles.menuItem} onClick={() => { toggleTts(); setMenuOpen(false) }}>
-              {ttsEnabled ? '🔇 Desativar voz do Toki' : '🔊 Ativar voz do Toki'}
-            </button>
-            {ttsEnabled && ttsVoices.length > 0 && (
-              <div className={styles.menuItem} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--text3)' }}>🗣 Voz</span>
-                <select
-                  style={{ width: '100%', background: 'var(--bg3)', color: 'var(--text)', border: '1px solid var(--bg3)', borderRadius: 6, padding: '4px 8px', fontSize: 13 }}
-                  onChange={e => { const v = getAvailableVoices().find(v => v.name === e.target.value); if (v) setVoice(v) }}
-                >
-                  {ttsVoices.map(v => <option key={v.name} value={v.name}>{v.name}</option>)}
-                </select>
-              </div>
-            )}
-            {ttsEnabled && (
-              <div className={styles.menuItem} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--text3)' }}>⚡ Velocidade: {ttsRate}x</span>
-                <input type="range" min="0.7" max="1.5" step="0.1" value={ttsRate}
-                  style={{ width: '100%' }}
-                  onChange={e => { const r = parseFloat(e.target.value); setTtsRate(r); localStorage.setItem('toki_tts_rate', r) }}
-                />
-              </div>
-            )}
             <button className={styles.menuItem} onClick={() => { toggleWake(); setMenuOpen(false) }}>
               {wakeEnabled ? '🎙 Desativar "Ei Toki"' : '🎙 Ativar "Ei Toki"'}
             </button>
@@ -614,8 +556,6 @@ export default function App() {
             onStop={stop}
             onText={handleResult}
             disabled={loading}
-            continuous={continuous}
-            onToggleContinuous={toggleContinuous}
           />
         </div>
       )}

@@ -13,6 +13,7 @@ import { openAndroidAlarm, openAndroidTimer, extractTime, isAndroid, formatDurat
 import { addGoogleTask, addGoogleTaskList } from './services/googleTasks'
 import { fetchRecentEmails, sendEmail } from './services/gmail'
 import { loadWatches, addWatch, removeWatch, getLastEmailId, setLastEmailId, matchWatches } from './services/emailWatch'
+import { fetchWeather, formatWeather } from './services/weather'
 import { VoiceButton } from './components/VoiceButton'
 import { ChatHistory } from './components/ChatHistory'
 import { EventList } from './components/EventList'
@@ -139,14 +140,28 @@ export default function App() {
     try {
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
 
+      // Detecta consulta de clima
+      const weatherQuery = /clima|tempo|temperatura|previsão|vai chover|chuva|calor|frio|como (está|tá|esta) o (tempo|dia lá fora)/i
+      if (weatherQuery.test(transcript)) {
+        try {
+          const w = await fetchWeather()
+          addMsg('assistant', formatWeather(w))
+        } catch (e) {
+          addMsg('assistant', `Não consegui obter o clima: ${e.message}`)
+        }
+        setLoading(false)
+        return
+      }
+
       // Detecta pedido de resumo do dia (hoje ou amanhã)
       const summaryQuery = /r[eu]{1,2}mo|como (está|tá|esta) (meu dia|o dia)|o que (tenho|tem) (hoje|amanhã|pra (hoje|amanhã))|meu dia|bom dia/i
       const summaryIsTomorrow = /amanhã/i.test(transcript)
       if (summaryQuery.test(transcript) && isGoogleConnected()) {
         const period = summaryIsTomorrow ? 'tomorrow' : 'today'
-        const [evs, emailResult] = await Promise.all([
+        const [evs, emailResult, weatherData] = await Promise.all([
           fetchFromGoogleCalendar(period),
-          fetchRecentEmails(20)
+          fetchRecentEmails(20),
+          fetchWeather().catch(() => null)
         ])
 
         const now = new Date()
@@ -183,6 +198,11 @@ export default function App() {
             parts.push(`✉️ **Emails não lidos** (${unread.length}):\n${emailLines}${extra}`)
           }
           setEmails(emailResult)
+        }
+
+        // Clima
+        if (weatherData) {
+          parts.push(`🌡️ **Clima:** ${weatherData.icon} ${weatherData.label} · ${weatherData.temp}°C (sensação ${weatherData.feels}°C)${weatherData.city ? ` em ${weatherData.city}` : ''}`)
         }
 
         addMsg('assistant', parts.join('\n\n'))

@@ -5,48 +5,115 @@
   padding: 0 16px 16px;
 }
 
+/* ── BUSCA ── */
+.searchWrap {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.search {
+  width: 100%;
+  background: var(--bg2);
+  border: 1.5px solid var(--bg3);
+  border-radius: 20px;
+  padding: 9px 36px 9px 16px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.search:focus { border-color: var(--accent); }
+.search::placeholder { color: var(--text3); }
+
+.clearSearch {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  color: var(--text3);
+  font-size: 13px;
+  padding: 2px 4px;
+}
+
+/* ── CARD ── */
 .card {
   background: var(--bg2);
   border-radius: var(--radius);
   overflow: hidden;
+  border: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.card.pinned {
+  border-color: rgba(124, 106, 247, 0.35);
 }
 
 .cardHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
+  gap: 6px;
+  padding: 11px 12px;
   cursor: pointer;
   user-select: none;
 }
 
-.typeIcon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
+.typeIcon { font-size: 16px; flex-shrink: 0; }
 
 .title {
   flex: 1;
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.date {
+.titleInput {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg3);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  font-family: inherit;
+}
+
+.progress {
   font-size: 11px;
-  color: var(--text3);
+  color: var(--accent2);
+  font-weight: 600;
   flex-shrink: 0;
 }
+
+.date { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+
+.pinBtn {
+  background: none;
+  font-size: 13px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  opacity: 0.3;
+  transition: opacity 0.15s;
+}
+.pinBtn:hover { opacity: 0.7; }
+.pinBtn.pinnedIcon { opacity: 1; }
 
 .shareBtn {
   background: none;
   color: var(--accent2);
   font-size: 15px;
-  padding: 2px 6px;
+  padding: 2px 4px;
   flex-shrink: 0;
   transition: opacity 0.15s;
 }
-
 .shareBtn:hover { opacity: 0.7; }
 
 .deleteBtn {
@@ -57,18 +124,16 @@
   flex-shrink: 0;
   transition: color 0.15s;
 }
+.deleteBtn:hover { color: var(--danger); }
 
-.deleteBtn:hover { color: var(--text); }
-
-.body {
-  padding: 0 14px 12px;
-}
+/* ── BODY ── */
+.body { padding: 0 12px 12px; }
 
 .itemList {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .item {
@@ -77,21 +142,69 @@
   gap: 8px;
   font-size: 14px;
   color: var(--text);
-  cursor: pointer;
-  padding: 4px 0;
+  padding: 5px 2px;
+  border-radius: 4px;
   transition: opacity 0.15s;
 }
 
-.item.done {
-  opacity: 0.45;
-  text-decoration: line-through;
-  color: var(--text2);
+.item.done { opacity: 0.45; }
+.item.done .itemText { text-decoration: line-through; color: var(--text2); }
+
+.check { font-size: 16px; flex-shrink: 0; color: var(--accent); cursor: pointer; }
+.itemText { flex: 1; cursor: pointer; }
+
+.removeItem {
+  background: none;
+  color: var(--text3);
+  font-size: 11px;
+  padding: 2px 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.item:hover .removeItem { opacity: 1; }
+
+/* ── ADICIONAR ITEM ── */
+.addItemTrigger {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text3);
+  background: none;
+  padding: 4px 2px;
+  transition: color 0.15s;
+}
+.addItemTrigger:hover { color: var(--accent2); }
+
+.addItemRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
 }
 
-.check {
-  font-size: 16px;
+.addItemInput {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--bg3);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  font-family: inherit;
+}
+.addItemInput:focus { border-color: var(--accent); }
+
+.addItemBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  color: var(--accent);
 }
 
 .content {

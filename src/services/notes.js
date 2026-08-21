@@ -41,6 +41,20 @@ export function appendToList(id, item) {
   return updateNote(id, { items })
 }
 
+export function pinNote(id) {
+  const notes = loadNotes()
+  const note = notes.find(n => n.id === id)
+  if (!note) return
+  updateNote(id, { pinned: !note.pinned })
+}
+
+export function removeListItem(noteId, itemId) {
+  const notes = loadNotes()
+  const note = notes.find(n => n.id === noteId)
+  if (!note) return
+  updateNote(noteId, { items: note.items.filter(i => i.id !== itemId) })
+}
+
 export function toggleListItem(noteId, itemId) {
   const notes = loadNotes()
   const note = notes.find(n => n.id === noteId)
